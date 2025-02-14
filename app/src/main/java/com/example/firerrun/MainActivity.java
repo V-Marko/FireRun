@@ -21,12 +21,13 @@ public class MainActivity extends Activity {
         Player player = gameView.getPlayer();
         playerController = new PlayerController(player, gameView);
 
-        Button btnLeft = findViewById(R.id.btnLeft);
-        Button btnRight = findViewById(R.id.btnRight);
-        Button btnJump = findViewById(R.id.btnJump);
-        Button btnShoot = findViewById(R.id.btnShoot);
 
-        btnLeft.setOnTouchListener((v, event) -> {
+         Button btnLeft = findViewById(R.id.btnLeft);
+         Button btnRight = findViewById(R.id.btnRight);
+         Button btnJump = findViewById(R.id.btnJump);
+         Button btnShoot = findViewById(R.id.btnShoot);
+
+         btnLeft.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                     playerController.moveLeft();

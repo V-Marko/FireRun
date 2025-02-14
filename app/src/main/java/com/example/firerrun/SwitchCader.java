@@ -7,14 +7,15 @@ import android.util.Log;
 import android.view.animation.AccelerateDecelerateInterpolator;
 
 public class SwitchCader {
+    public static boolean isCameraMoving;  // флаг для отслеживания движения камеры
     private Player player;
     private GameView gameView;
     private static float screenSize;
     private int index = 1;
     private ValueAnimator animator;
-    private boolean isAnimating = false;
-    private static final float CAMERA_OFFSET_SPEED = 20;  // Speed Camera
-    private static final float CAMERA_BORDER = 100; // Limits Camera
+    private boolean isAnimating = false;  // флаг анимации
+    private static final float CAMERA_OFFSET_SPEED = 20;  // скорость камеры
+    private static final float CAMERA_BORDER = 100; // границы камеры
 
     public SwitchCader(Player player, GameView gameView) {
         this.player = player;
@@ -49,7 +50,8 @@ public class SwitchCader {
     }
 
     private void animateCaderTransition(float offsetValue, boolean isLeft) {
-        isAnimating = true;
+        isAnimating = true;  // Камера начала анимацию
+        isCameraMoving = true;  // Устанавливаем флаг, что камера двигается
 
         animator = ValueAnimator.ofFloat(0, offsetValue);
         animator.setDuration(500);
@@ -57,10 +59,11 @@ public class SwitchCader {
         animator.addUpdateListener(animation -> {
             float offset = (float) animation.getAnimatedValue();
 
+            // Обновляем позицию блоков и объектов, включая BadBoxRun
             for (Block block : gameView.getBlockList()) {
                 block.x += offset;
             }
-            for(BadBox badBox : gameView.getBadBoxList()){
+            for (BadBox badBox : gameView.getBadBoxList()) {
                 badBox.x += offset;
             }
 
@@ -73,7 +76,7 @@ public class SwitchCader {
             if (gameView.getBadBox() != null) {
                 gameView.getBadBox().x += offset;
             }
-
+        
             gameView.invalidate();
         });
 
@@ -81,11 +84,12 @@ public class SwitchCader {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
-                isAnimating = false;
+                isAnimating = false;  // Камера закончила анимацию
+                isCameraMoving = false;  // Сбрасываем флаг, камера не двигается
             }
         });
 
         animator.start();
     }
-
 }
+

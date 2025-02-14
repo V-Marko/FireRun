@@ -7,7 +7,7 @@ import android.graphics.Matrix;
 public class Bullet {
     public float x;
     private float y;
-    public static final float DEFAULT_SPEED = 20f;
+    public static final float DEFAULT_SPEED = 40f;
     private float speed;
     private Bitmap image;
     public static int width = 50;

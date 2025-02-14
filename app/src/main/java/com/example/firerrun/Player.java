@@ -137,6 +137,9 @@ public class Player {
             y += jumpSpeed;
             jumpSpeed += gravity;
         }
+
+
+        Log.i("X", "x = " + getX());
     }
 
     private boolean isCollidingWithBlock(float newX, float newY, Block block) {

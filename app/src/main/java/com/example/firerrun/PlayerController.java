@@ -22,7 +22,7 @@ public class PlayerController {
         player.setMovingLeft(true);
         player.setMovingRight(false);
     }
-    //исправление бага в Jump
+    
     public void stopLeft() {
         player.setMovingLeft(false);
     }
