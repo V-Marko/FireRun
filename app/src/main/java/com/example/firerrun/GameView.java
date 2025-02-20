@@ -29,18 +29,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final long collisionCooldown = 300;
     private PlayerController playerController;
     private SwitchCader switchCader;
-
     private int BlockID = 0; // block id
 
     private List<Block> blockList = new ArrayList<>();
     private List<Bullet> bullets = new ArrayList<>();
     private List<BadBox> badBoxList = new ArrayList<>();
 
+
+    List<FinishScript> finishScripts = new ArrayList<>();
+
+
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
         getHolder().addCallback(this);
 
-        // Инициализация блоков
         for (int[] blockData : BlocksList.Blocks) {
             Block block;
             switch (blockData[4]) {
@@ -59,19 +61,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 case 4:
                     BlockID = R.drawable.barrel;
                     break;
+                case 5:
+                    BlockID = R.drawable.finish;
             }
             block = new Block(context, blockData[0], blockData[1], blockData[2], blockData[3], BlockID);
             blockList.add(block);
         }
 
-        // Инициализация BadBox
         for (int[] badBoxData : BadBoxList.BadBoxs) {
             BadBox badBox = new BadBox(badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
                     BitmapFactory.decodeResource(context.getResources(), R.drawable.bad_box));
             badBoxList.add(badBox);
         }
 
-        // Инициализация BadBoxRun
         player = new Player(context);
         player.setBlocks(blockList);
 
@@ -87,6 +89,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         playerController = new PlayerController(player, this);
         switchCader = new SwitchCader(player, this);
+
+        finishScripts.add(new FinishScript(4500, 500, 200, 200, getContext()));
+
+
     }
 
     public static int getScreenWidth(Context context) {
@@ -135,11 +141,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void update() {
-
         switchCader.updateCader();
 
-
-
+        for (FinishScript finishScript : finishScripts) {
+            finishScript.x += 0;
+        }
 
         for (int i = bullets.size() - 1; i >= 0; i--) {
             Bullet bullet = bullets.get(i);
@@ -158,7 +164,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
 
-
             for (BadBox badBox : badBoxList) {
                 badBox.update();
             }
@@ -173,6 +178,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
         }
+
         if(player.getY() >=1000){
             life.decreaseLife(999_999_999);
         }
@@ -212,6 +218,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (background != null) {
             canvas.drawBitmap(background, 0, 0, null);
         }
+
+        // Рисуем finishScripts
+        for (FinishScript finishScript : finishScripts) {
+            finishScript.draw(canvas);
+        }
+
         for (Bullet bullet : bullets) {
             try {
                 bullet.draw(canvas);
@@ -227,9 +239,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         for (Block block : blockList) {
             block.draw(canvas);
         }
-
-
-
     }
 
     public Player getPlayer() {
@@ -239,11 +248,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public List<Block> getBlockList() {
         return blockList;
     }
+
     public List<BadBox> getBadBoxList(){
         return badBoxList;
     }
-
-
 
     public List<Bullet> getBullets() {
         return bullets;
@@ -252,7 +260,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public BadBox getBadBox() {
         return badBox;
     }
-
 
     class GameThread extends Thread {
         private SurfaceHolder surfaceHolder;
