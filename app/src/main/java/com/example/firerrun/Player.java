@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.os.Handler;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -17,6 +18,9 @@ import android.view.View;
 import android.widget.Button;
 
 public class Player {
+    private GameView gameView;
+    private PlayerController playerController;
+
     public boolean TouchRedBlockTOplayerLEFT = false;
     public boolean TouchRedBlockTOplayerRIGHT = false;
 
@@ -55,7 +59,7 @@ public class Player {
     private float currentJumpHeight = 0f;
     private Animation animation;
 
-    PlayerController playerController;
+
     public Player(Context context) {
         this.context = context;
         this.x = 100;
@@ -76,6 +80,10 @@ public class Player {
         blocks = new ArrayList<>();
 
         animation = new Animation(this);
+
+        this.context = context;
+        // Инициализация playerController
+        this.playerController = new PlayerController(this, gameView);
     }
 
     public void update() {
@@ -168,7 +176,6 @@ public class Player {
             jumping = true;
             jumpSpeed = initialJumpSpeed;
             currentJumpHeight = 0f;
-            Log.i("Jump", "JUMP initiated");
         }
     }
 
@@ -372,7 +379,6 @@ public class Player {
 
 
     public void PlayerFinishAnimation() {
-        // Ensure UI updates are performed on the main thread
         ((Activity) context).runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -386,12 +392,8 @@ public class Player {
                 btnJump.setVisibility(View.GONE);
                 btnShoot.setVisibility(View.GONE);
 
-                // for(int i = 0; i<=20;i++){
-                //     playerController.moveRight();
-                // }
             }
         });
     }
-
 }
 
