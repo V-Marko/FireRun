@@ -1,5 +1,6 @@
 package com.example.firerrun;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -12,6 +13,8 @@ import java.util.List;
 
 import android.graphics.Paint;
 import android.graphics.Color;
+import android.view.View;
+import android.widget.Button;
 
 public class Player {
     public boolean TouchRedBlockTOplayerLEFT = false;
@@ -51,6 +54,8 @@ public class Player {
 
     private float currentJumpHeight = 0f;
     private Animation animation;
+
+    PlayerController playerController;
     public Player(Context context) {
         this.context = context;
         this.x = 100;
@@ -366,8 +371,27 @@ public class Player {
 
 
 
-//    public void PlayerFinishAnimation(){
-//
-//
-//    }
+    public void PlayerFinishAnimation() {
+        // Ensure UI updates are performed on the main thread
+        ((Activity) context).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Button btnLeft = MainActivity.btnLeft;
+                Button btnRight = MainActivity.btnRight;
+                Button btnJump = MainActivity.btnJump;
+                Button btnShoot = MainActivity.btnShoot;
+
+                btnLeft.setVisibility(View.GONE);
+                btnRight.setVisibility(View.GONE);
+                btnJump.setVisibility(View.GONE);
+                btnShoot.setVisibility(View.GONE);
+
+                // for(int i = 0; i<=20;i++){
+                //     playerController.moveRight();
+                // }
+            }
+        });
+    }
+
 }
+

@@ -202,7 +202,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         if(player.checkFlagCollision(finishScripts)){
             Log.i("Finishh", "finish");
-//            player.PlayerFinishAnimation();
+            player.PlayerFinishAnimation();
         }
 
         if (!isOnBlock) {

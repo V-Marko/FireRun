@@ -4,12 +4,17 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Button;
 
 public class MainActivity extends Activity {
 
     private GameView gameView;
     private PlayerController playerController;
+    public static Button btnLeft;
+    public static Button btnRight;
+    public static Button btnJump;
+    public static Button btnShoot;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -17,17 +22,22 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Initialize buttons *after* setContentView()
+        btnLeft = findViewById(R.id.btnLeft);
+        btnRight = findViewById(R.id.btnRight);
+        btnJump = findViewById(R.id.btnJump);
+        btnShoot = findViewById(R.id.btnShoot);
+
+        btnLeft.setVisibility(View.VISIBLE);
+        btnRight.setVisibility(View.VISIBLE);
+        btnJump.setVisibility(View.VISIBLE);
+        btnShoot.setVisibility(View.VISIBLE);
+
         gameView = findViewById(R.id.gameView);
         Player player = gameView.getPlayer();
         playerController = new PlayerController(player, gameView);
 
-
-         Button btnLeft = findViewById(R.id.btnLeft);
-         Button btnRight = findViewById(R.id.btnRight);
-         Button btnJump = findViewById(R.id.btnJump);
-         Button btnShoot = findViewById(R.id.btnShoot);
-
-         btnLeft.setOnTouchListener((v, event) -> {
+        btnLeft.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                     playerController.moveLeft();
