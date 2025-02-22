@@ -26,4 +26,19 @@ public class FinishScript {
             canvas.drawBitmap(image, x, y, null);
         }
     }
+    public float getX(){
+        return x;
+    }
+    public  float  getY(){
+        return y;
+
+    }
+
+    public float getWidth() {
+        return width;
+    }
+
+    public float getHeight() {
+        return  height;
+    }
 }

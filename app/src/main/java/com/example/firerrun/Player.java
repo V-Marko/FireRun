@@ -200,6 +200,23 @@ public class Player {
 
         return isColliding;
     }
+
+    public boolean checkFlagCollision(List<FinishScript> finishScripts) {
+        for (FinishScript finishScript : finishScripts) {
+            boolean xOverlap = (x < finishScript.getX() + finishScript.getWidth()) &&
+                    (x + width > finishScript.getX());
+
+            boolean yOverlap = (y + height >= finishScript.getY()) &&
+                    (y <= finishScript.getY() + finishScript.getHeight());
+
+            if (xOverlap && yOverlap) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     public void draw(Canvas canvas) {
         Bitmap currentBodyImage = bodyImage;
         Bitmap currentHeadImage = headImage;
@@ -346,4 +363,11 @@ public class Player {
             return 0;
         }
     }
+
+
+
+//    public void PlayerFinishAnimation(){
+//
+//
+//    }
 }
