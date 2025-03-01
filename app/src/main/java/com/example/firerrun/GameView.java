@@ -1,17 +1,23 @@
 package com.example.firerrun;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Menu;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.util.DisplayMetrics;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +41,56 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private List<Bullet> bullets = new ArrayList<>();
     private List<BadBox> badBoxList = new ArrayList<>();
 
+    private boolean isGamePaused = false; // Флаг для паузы игры
+
+
 
     List<FinishScript> finishScripts = new ArrayList<>();
+
+    public boolean isGamePaused() {
+        return isGamePaused;
+    }
+
+    public void pauseGame() {
+        isGamePaused = true;
+        if (gameThread != null) {
+            gameThread.setRunning(false);
+            try {
+                gameThread.join(); // Дождаться завершения потока
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            gameThread = null; // Обнулить ссылку на поток
+        }
+    }
+
+    public void resumeGame() {
+        isGamePaused = false;
+        if (gameThread == null) {
+            gameThread = new GameThread(getHolder(), this);
+            gameThread.setRunning(true);
+            gameThread.start();
+        } else {
+            gameThread.setRunning(true);
+        }
+    }
+
+
+
+
+    private class UpdateTask extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... voids) {
+            update();
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            invalidate();
+        }
+    }
 
 
     public GameView(Context context, AttributeSet attrs) {
@@ -93,6 +147,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         finishScripts.add(new FinishScript(4500, 500, 200, 200, getContext()));
 
 
+
+
     }
 
     public static int getScreenWidth(Context context) {
@@ -113,11 +169,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        int backgroundWidth = getWidth();
-        int backgroundHeight = getHeight();
-
+        if (gameThread == null) {
+            gameThread = new GameThread(getHolder(), this);
+        }
         Bitmap originalBackground = BitmapFactory.decodeResource(getResources(), R.drawable.background);
-        background = Bitmap.createScaledBitmap(originalBackground, backgroundWidth, backgroundHeight, true);
+        background = Bitmap.createScaledBitmap(originalBackground, getWidth(), getHeight(), true);
 
         gameThread.setRunning(true);
         gameThread.start();
@@ -129,19 +185,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         boolean retry = true;
+        gameThread.setRunning(false); // Stop the loop
         while (retry) {
             try {
-                gameThread.setRunning(false);
-                gameThread.join();
+                gameThread.join(); // Wait for thread to finish
+                retry = false;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            retry = false;
         }
     }
 
     public void update() {
         switchCader.updateCader();
+
+        if (isGamePaused) return;
 
         for (FinishScript finishScript : finishScripts) {
             finishScript.x += 0;
@@ -223,6 +281,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawBitmap(background, 0, 0, null);
         }
 
+
         // Рисуем finishScripts
         for (FinishScript finishScript : finishScripts) {
             finishScript.draw(canvas);
@@ -242,6 +301,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         for (Block block : blockList) {
             block.draw(canvas);
+        }
+        if (isGamePaused) {//TODO:Pause
+            PauseFunction(canvas);
+
+        } else {
+            for (Block block : blockList) {
+                block.draw(canvas);
+            }
+            for (BadBox badBox : badBoxList) {
+                badBox.draw(canvas);
+            }
         }
     }
 
@@ -281,7 +351,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         @Override
         public void run() {
-            Canvas canvas;
             long lastTime = System.nanoTime();
             double nsPerUpdate = 1_000_000_000.0 / 120.0; // 120 FPS
             double delta = 0;
@@ -291,14 +360,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 delta += (now - lastTime) / nsPerUpdate;
                 lastTime = now;
 
-                while (delta >= 1) {
-                    canvas = null;
+                while (delta >= 1 && running) { // Добавлена проверка running
+                    Canvas canvas = null;
                     try {
                         canvas = surfaceHolder.lockCanvas();
+                        if (canvas == null) continue;
+
                         synchronized (surfaceHolder) {
                             gameView.update();
                             gameView.draw(canvas);
                         }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     } finally {
                         if (canvas != null) {
                             surfaceHolder.unlockCanvasAndPost(canvas);
@@ -308,5 +381,45 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
         }
+
     }
+
+    public void PauseFunction(Canvas canvas) {
+        // Рисуем фон для паузы
+        Paint backgroundPaint = new Paint();
+        backgroundPaint.setColor(Color.argb(180, 0, 0, 0));
+        canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
+
+        // Рисуем текст "Game Paused"
+        Paint textPaint = new Paint();
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(100);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        canvas.drawText("Game Paused", getWidth() / 2, getHeight() / 4, textPaint);
+
+        // Рисуем кнопки
+        Paint buttonPaint = new Paint();
+        buttonPaint.setColor(Color.DKGRAY);
+
+        Paint buttonTextPaint = new Paint();
+        buttonTextPaint.setColor(Color.WHITE);
+        buttonTextPaint.setTextSize(80);
+        buttonTextPaint.setTextAlign(Paint.Align.CENTER);
+
+        int buttonWidth = getWidth() / 2;
+        int buttonHeight = 150;
+        int centerX = getWidth() / 2;
+        int startY = getHeight() / 2;
+
+        // Кнопка перезапуска игры
+        Rect restartButton = new Rect(centerX - buttonWidth / 2, startY, centerX + buttonWidth / 2, startY + buttonHeight);
+        canvas.drawRect(restartButton, buttonPaint);
+        canvas.drawText("Restart Game", centerX, startY + 100, buttonTextPaint);
+
+        // Кнопка меню
+        Rect menuButton = new Rect(centerX - buttonWidth / 2, startY + 200, centerX + buttonWidth / 2, startY + buttonHeight + 200);
+        canvas.drawRect(menuButton, buttonPaint);
+        canvas.drawText("Menu", centerX, startY + 300, buttonTextPaint);
+    }
+
 }

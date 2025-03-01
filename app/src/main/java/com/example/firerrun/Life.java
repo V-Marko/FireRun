@@ -23,7 +23,7 @@ public class Life {
         this.currentLives = maxLives;
 
         textPaint = new Paint();
-        textPaint.setColor(Color.RED);
+        textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(50);
         textPaint.setTextAlign(Paint.Align.LEFT);
     }

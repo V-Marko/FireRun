@@ -15,6 +15,7 @@ public class MainActivity extends Activity {
     public static Button btnRight;
     public static Button btnJump;
     public static Button btnShoot;
+    public static Button btnPause;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -27,6 +28,9 @@ public class MainActivity extends Activity {
         btnRight = findViewById(R.id.btnRight);
         btnJump = findViewById(R.id.btnJump);
         btnShoot = findViewById(R.id.btnShoot);
+        btnPause = findViewById(R.id.btnPause); // pause
+
+        btnPause.setVisibility(View.VISIBLE); // pause
 
         btnLeft.setVisibility(View.VISIBLE);
         btnRight.setVisibility(View.VISIBLE);
@@ -37,6 +41,18 @@ public class MainActivity extends Activity {
         Player player = gameView.getPlayer();
         playerController = new PlayerController(player, gameView);
 
+        btnPause.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (gameView.isGamePaused()) {
+                    gameView.resumeGame();
+                    btnPause.setText("Pause");
+                } else {
+                    gameView.pauseGame();
+                    btnPause.setText("Resume");
+                }
+            }
+        });
         btnLeft.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
