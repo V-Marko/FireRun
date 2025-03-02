@@ -1,6 +1,5 @@
 package com.example.firerrun;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -8,21 +7,24 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.Menu;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.util.DisplayMetrics;
-import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import android.view.View;
+import android.view.View.OnClickListener;
+
+
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
+    private boolean isInMenu = true;
+
     private Bitmap background;
     private GameThread gameThread;
     private Player player;
@@ -44,8 +46,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean isGamePaused = false; // Флаг для паузы игры
 
 
+    private Rect restartButton, menuButton;
+
 
     List<FinishScript> finishScripts = new ArrayList<>();
+    private Rect[] levelButtons;
 
     public boolean isGamePaused() {
         return isGamePaused;
@@ -76,23 +81,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
 
-
-
-    private class UpdateTask extends AsyncTask<Void, Void, Void> {
-        @Override
-        protected Void doInBackground(Void... voids) {
-            update();
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            invalidate();
-        }
-    }
-
-
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
         getHolder().addCallback(this);
@@ -100,23 +88,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         for (int[] blockData : BlocksList.Blocks) {
             Block block;
             switch (blockData[4]) {
-                case 0:
-                    BlockID = R.drawable.block;
-                    break;
-                case 1:
-                    BlockID = R.drawable.block2;
-                    break;
-                case 2:
-                    BlockID = R.drawable.oak_tree;
-                    break;
-                case 3:
-                    BlockID = R.drawable.oak2;
-                    break;
-                case 4:
-                    BlockID = R.drawable.barrel;
-                    break;
-                case 5:
-                    BlockID = R.drawable.finish;
+                case 0: BlockID = R.drawable.block;break;
+                case 1: BlockID = R.drawable.block2;break;
+                case 2: BlockID = R.drawable.oak_tree;break;
+                case 3: BlockID = R.drawable.oak2;break;
+                case 4: BlockID = R.drawable.barrel;break;
+                case 5: BlockID = R.drawable.finish;
             }
             block = new Block(context, blockData[0], blockData[1], blockData[2], blockData[3], BlockID);
             blockList.add(block);
@@ -185,13 +162,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         boolean retry = true;
-        gameThread.setRunning(false); // Stop the loop
-        while (retry) {
-            try {
-                gameThread.join(); // Wait for thread to finish
-                retry = false;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        if (gameThread != null) {
+            gameThread.setRunning(false); // Stop the loop
+            while (retry) {
+                try {
+                    gameThread.join(); // Wait for thread to finish
+                    retry = false;
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -282,7 +261,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
 
-        // Рисуем finishScripts
         for (FinishScript finishScript : finishScripts) {
             finishScript.draw(canvas);
         }
@@ -385,19 +363,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void PauseFunction(Canvas canvas) {
-        // Рисуем фон для паузы
         Paint backgroundPaint = new Paint();
         backgroundPaint.setColor(Color.argb(180, 0, 0, 0));
         canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
 
-        // Рисуем текст "Game Paused"
         Paint textPaint = new Paint();
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(100);
         textPaint.setTextAlign(Paint.Align.CENTER);
         canvas.drawText("Game Paused", getWidth() / 2, getHeight() / 4, textPaint);
 
-        // Рисуем кнопки
         Paint buttonPaint = new Paint();
         buttonPaint.setColor(Color.DKGRAY);
 
@@ -411,15 +386,118 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         int centerX = getWidth() / 2;
         int startY = getHeight() / 2;
 
-        // Кнопка перезапуска игры
-        Rect restartButton = new Rect(centerX - buttonWidth / 2, startY, centerX + buttonWidth / 2, startY + buttonHeight);
+        restartButton = new Rect(centerX - buttonWidth / 2, startY, centerX + buttonWidth / 2, startY + buttonHeight);
         canvas.drawRect(restartButton, buttonPaint);
         canvas.drawText("Restart Game", centerX, startY + 100, buttonTextPaint);
 
-        // Кнопка меню
-        Rect menuButton = new Rect(centerX - buttonWidth / 2, startY + 200, centerX + buttonWidth / 2, startY + buttonHeight + 200);
+        menuButton = new Rect(centerX - buttonWidth / 2, startY + 200, centerX + buttonWidth / 2, startY + buttonHeight + 200);
         canvas.drawRect(menuButton, buttonPaint);
         canvas.drawText("Menu", centerX, startY + 300, buttonTextPaint);
     }
 
+    public void MenuLevelsFunction(Canvas canvas) {
+        Paint backgroundPaint = new Paint();
+        backgroundPaint.setColor(Color.argb(180, 0, 0, 0));
+        canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
+
+        Paint textPaint = new Paint();
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(100);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        canvas.drawText("Select Level", getWidth() / 2, getHeight() / 6, textPaint);
+
+        Paint buttonPaint = new Paint();
+        buttonPaint.setColor(Color.DKGRAY);
+
+        Paint buttonTextPaint = new Paint();
+        buttonTextPaint.setColor(Color.WHITE);
+        buttonTextPaint.setTextSize(60);
+        buttonTextPaint.setTextAlign(Paint.Align.CENTER);
+
+        int buttonWidth = getWidth() / 4;
+        int buttonHeight = 120;
+        int padding = 20;
+
+        int columns = 4;
+        int rows = 3;
+
+        int totalWidth = columns * (buttonWidth + padding * 2) - padding * 2;
+        int totalHeight = rows * (buttonHeight + padding) - padding;
+
+        int startX = (getWidth() - totalWidth) / 2;
+        int startY = (getHeight() - totalHeight) / 2;
+
+        // Убедимся, что массив инициализирован
+        if (levelButtons == null || levelButtons.length != 12) {
+            levelButtons = new Rect[12];
+        }
+
+        for (int i = 0; i < 12; i++) {
+            int row = i / columns;
+            int col = i % columns;
+            int x = startX + col * (buttonWidth + padding * 2);
+            int y = startY + row * (buttonHeight + padding);
+
+            levelButtons[i] = new Rect(x, y, x + buttonWidth, y + buttonHeight);
+            canvas.drawRect(levelButtons[i], buttonPaint);
+            canvas.drawText("Level " + (i + 1), x + buttonWidth / 2, y + buttonHeight / 2 + 20, buttonTextPaint);
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        float touchX = event.getX();
+        float touchY = event.getY();
+
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            if (isGamePaused) {
+                if (restartButton != null && restartButton.contains((int) touchX, (int) touchY)) {
+                    restartGame();
+                    return true;
+                }
+
+                if (menuButton != null && menuButton.contains((int) touchX, (int) touchY)) {
+                    Log.i("Menu", "MENUUUU");
+                    goToMenu();
+                    return true;
+                }
+            }
+
+            if (isInMenu && levelButtons != null) {
+                for (int i = 0; i < levelButtons.length; i++) {
+                    if (levelButtons[i].contains((int) touchX, (int) touchY)) {
+                        Log.i("lvl", "LvL" + (i+1));
+                        return true;
+                    }
+                }
+            }
+        }
+        return super.onTouchEvent(event);
+    }
+
+    private void restartGame() {
+        Log.i("GameView", "Restarting game...");
+        life = new Life(getContext());
+        player = new Player(getContext());
+        player.setBlocks(blockList);
+        bullets.clear();
+        badBoxList.clear();
+        for (int[] badBoxData : BadBoxList.BadBoxs) {
+            badBoxList.add(new BadBox(badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
+                    BitmapFactory.decodeResource(getResources(), R.drawable.bad_box)));
+        }
+        resumeGame();
+    }
+
+    private void goToMenu() {
+        Log.i("GameView", "Going to menu...");
+        Canvas canvas = getHolder().lockCanvas();
+        if (canvas != null) {
+            try {
+                MenuLevelsFunction(canvas);
+            } finally {
+                getHolder().unlockCanvasAndPost(canvas);
+            }
+        }
+    }
 }

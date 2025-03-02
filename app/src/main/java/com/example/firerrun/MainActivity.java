@@ -17,6 +17,7 @@ public class MainActivity extends Activity {
     public static Button btnShoot;
     public static Button btnPause;
 
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +37,9 @@ public class MainActivity extends Activity {
         btnRight.setVisibility(View.VISIBLE);
         btnJump.setVisibility(View.VISIBLE);
         btnShoot.setVisibility(View.VISIBLE);
+
+
+
 
         gameView = findViewById(R.id.gameView);
         Player player = gameView.getPlayer();
