@@ -51,9 +51,11 @@ public class MainActivity extends Activity {
                 if (gameView.isGamePaused()) {
                     gameView.resumeGame();
                     btnPause.setText("Pause");
+
                 } else {
                     gameView.pauseGame();
                     btnPause.setText("Resume");
+                    GameView.isMenuVisible = false;
                 }
             }
         });

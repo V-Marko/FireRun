@@ -365,6 +365,10 @@ public class Player {
     public void setX(float newX) {
         x = newX;
     }
+    public void setY(int newY) {
+        y = newY;
+    }
+
 
     public int getVelocityX() {
         if (movingLeft) {
@@ -395,5 +399,8 @@ public class Player {
             }
         });
     }
+
+
+
 }
 

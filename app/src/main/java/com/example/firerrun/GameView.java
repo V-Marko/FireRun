@@ -7,6 +7,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -18,13 +21,9 @@ import android.view.WindowManager;
 import java.util.ArrayList;
 import java.util.List;
 
-import android.view.View;
-import android.view.View.OnClickListener;
-
-
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean isInMenu = true;
-
+    public int level = 1;
     private Bitmap background;
     private GameThread gameThread;
     private Player player;
@@ -37,20 +36,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final long collisionCooldown = 300;
     private PlayerController playerController;
     private SwitchCader switchCader;
-    private int BlockID = 0; // block id
+    private int BlockID = 0;
+
+    public static boolean isMenuVisible = false;
+    public static boolean isGamePaused = false;
+
+    private Rect menuButton;
+
+    private boolean isLoad = false;
+
+    List<FinishScript> finishScripts = new ArrayList<>();
+    private Rect[] levelButtons;
 
     private List<Block> blockList = new ArrayList<>();
     private List<Bullet> bullets = new ArrayList<>();
     private List<BadBox> badBoxList = new ArrayList<>();
-
-    private boolean isGamePaused = false; // Флаг для паузы игры
-
-
-    private Rect restartButton, menuButton;
-
-
-    List<FinishScript> finishScripts = new ArrayList<>();
-    private Rect[] levelButtons;
 
     public boolean isGamePaused() {
         return isGamePaused;
@@ -60,18 +60,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         isGamePaused = true;
         if (gameThread != null) {
             gameThread.setRunning(false);
-            try {
-                gameThread.join(); // Дождаться завершения потока
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            gameThread = null; // Обнулить ссылку на поток
         }
     }
 
     public void resumeGame() {
         isGamePaused = false;
-        if (gameThread == null) {
+        if (gameThread == null || !gameThread.isRunning()) {
             gameThread = new GameThread(getHolder(), this);
             gameThread.setRunning(true);
             gameThread.start();
@@ -80,24 +74,35 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    private void loadLevel(int level) {
+        blockList.clear();
+        for (int[] blockData : BlocksList.Blocks[level - 1]) {
+            Block block;
+            switch (blockData[4]) {
+                case 0: BlockID = R.drawable.block; break;
+                case 1: BlockID = R.drawable.block2; break;
+                case 2: BlockID = R.drawable.oak_tree; break;
+                case 3: BlockID = R.drawable.oak2; break;
+                case 4: BlockID = R.drawable.barrel; break;
+                case 5: BlockID = R.drawable.finish; break;
+            }
+            block = new Block(getContext(), blockData[0], blockData[1], blockData[2], blockData[3], BlockID);
+            blockList.add(block);
+        }
+        player.setBlocks(blockList);
+        this.level = level;
+    }
 
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
         getHolder().addCallback(this);
 
-        for (int[] blockData : BlocksList.Blocks) {
-            Block block;
-            switch (blockData[4]) {
-                case 0: BlockID = R.drawable.block;break;
-                case 1: BlockID = R.drawable.block2;break;
-                case 2: BlockID = R.drawable.oak_tree;break;
-                case 3: BlockID = R.drawable.oak2;break;
-                case 4: BlockID = R.drawable.barrel;break;
-                case 5: BlockID = R.drawable.finish;
-            }
-            block = new Block(context, blockData[0], blockData[1], blockData[2], blockData[3], BlockID);
-            blockList.add(block);
-        }
+        isMenuVisible = true;
+        isInMenu = true;
+
+        player = new Player(context);
+
+        loadLevel(level);
 
         for (int[] badBoxData : BadBoxList.BadBoxs) {
             BadBox badBox = new BadBox(badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
@@ -105,7 +110,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             badBoxList.add(badBox);
         }
 
-        player = new Player(context);
         player.setBlocks(blockList);
 
         gameThread = new GameThread(getHolder(), this);
@@ -122,10 +126,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         switchCader = new SwitchCader(player, this);
 
         finishScripts.add(new FinishScript(4500, 500, 200, 200, getContext()));
-
-
-
-
     }
 
     public static int getScreenWidth(Context context) {
@@ -163,10 +163,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public void surfaceDestroyed(SurfaceHolder holder) {
         boolean retry = true;
         if (gameThread != null) {
-            gameThread.setRunning(false); // Stop the loop
+            gameThread.setRunning(false);
             while (retry) {
                 try {
-                    gameThread.join(); // Wait for thread to finish
+                    gameThread.join();
                     retry = false;
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -176,12 +176,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void update() {
-        switchCader.updateCader();
-
         if (isGamePaused) return;
+
+        switchCader.updateCader();
 
         for (FinishScript finishScript : finishScripts) {
             finishScript.x += 0;
+        }
+
+        for (BadBox badBox : badBoxList) {
+            badBox.update();
         }
 
         for (int i = bullets.size() - 1; i >= 0; i--) {
@@ -201,10 +205,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
 
-            for (BadBox badBox : badBoxList) {
-                badBox.update();
-            }
-
             for (Block block : blockList) {
                 if (bullet.getX() < block.getX() + block.getWidth() &&
                         bullet.getX() + Bullet.width > block.getX() &&
@@ -216,9 +216,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        if(player.getY() >=1000){
+        if (player.getY() >= 1000) {
             life.decreaseLife(999_999_999);
         }
+
         for (BadBox badBox : badBoxList) {
             if (badBox.checkCollisionPlayer(player)) {
                 long currentTime = System.currentTimeMillis();
@@ -237,9 +238,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 break;
             }
         }
-        if(player.checkFlagCollision(finishScripts)){
+
+        if (player.checkFlagCollision(finishScripts)) {
+            level += 1;
             Log.i("Finishh", "finish");
             player.PlayerFinishAnimation();
+            goToMenu();
         }
 
         if (!isOnBlock) {
@@ -247,19 +251,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         player.update();
-        for (BadBox badBox : badBoxList) {
-            badBox.update();
-        }
     }
 
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
 
+        if (isMenuVisible) {
+            MenuLevelsFunction(canvas);
+            return;
+        }
+
+        if (isLoad) {
+            LoadFunction(canvas, 20);
+            return;
+        }
+
+        // Остальной код отрисовки игры
         if (background != null) {
             canvas.drawBitmap(background, 0, 0, null);
         }
-
 
         for (FinishScript finishScript : finishScripts) {
             finishScript.draw(canvas);
@@ -280,18 +291,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         for (Block block : blockList) {
             block.draw(canvas);
         }
-        if (isGamePaused) {//TODO:Pause
-            PauseFunction(canvas);
 
-        } else {
-            for (Block block : blockList) {
-                block.draw(canvas);
-            }
-            for (BadBox badBox : badBoxList) {
-                badBox.draw(canvas);
-            }
+        if (isGamePaused) {
+            PauseFunction(canvas);
         }
     }
+
 
     public Player getPlayer() {
         return player;
@@ -301,7 +306,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return blockList;
     }
 
-    public List<BadBox> getBadBoxList(){
+    public List<BadBox> getBadBoxList() {
         return badBoxList;
     }
 
@@ -313,10 +318,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return badBox;
     }
 
+    public int getLevel() {
+        return level;
+    }
+
     class GameThread extends Thread {
         private SurfaceHolder surfaceHolder;
         private GameView gameView;
-        private boolean running;
+        private volatile boolean running;
 
         public GameThread(SurfaceHolder surfaceHolder, GameView gameView) {
             this.surfaceHolder = surfaceHolder;
@@ -327,18 +336,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             this.running = running;
         }
 
+        public boolean isRunning() {
+            return running;
+        }
+
         @Override
         public void run() {
             long lastTime = System.nanoTime();
-            double nsPerUpdate = 1_000_000_000.0 / 120.0; // 120 FPS
+            double nsPerUpdate = 1_000_000_000.0 / 60.0; // 60 FPS
             double delta = 0;
 
             while (running) {
+                if (!surfaceHolder.getSurface().isValid()) {
+                    continue;
+                }
+
                 long now = System.nanoTime();
                 delta += (now - lastTime) / nsPerUpdate;
                 lastTime = now;
 
-                while (delta >= 1 && running) { // Добавлена проверка running
+                while (delta >= 1 && running) {
                     Canvas canvas = null;
                     try {
                         canvas = surfaceHolder.lockCanvas();
@@ -357,9 +374,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     }
                     delta--;
                 }
+
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
-
     }
 
     public void PauseFunction(Canvas canvas) {
@@ -386,13 +408,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         int centerX = getWidth() / 2;
         int startY = getHeight() / 2;
 
-        restartButton = new Rect(centerX - buttonWidth / 2, startY, centerX + buttonWidth / 2, startY + buttonHeight);
-        canvas.drawRect(restartButton, buttonPaint);
-        canvas.drawText("Restart Game", centerX, startY + 100, buttonTextPaint);
-
-        menuButton = new Rect(centerX - buttonWidth / 2, startY + 200, centerX + buttonWidth / 2, startY + buttonHeight + 200);
+        menuButton = new Rect(centerX - buttonWidth / 2, startY, centerX + buttonWidth / 2, startY + buttonHeight);
         canvas.drawRect(menuButton, buttonPaint);
-        canvas.drawText("Menu", centerX, startY + 300, buttonTextPaint);
+        canvas.drawText("Menu", centerX, startY + 100, buttonTextPaint);
     }
 
     public void MenuLevelsFunction(Canvas canvas) {
@@ -427,7 +445,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         int startX = (getWidth() - totalWidth) / 2;
         int startY = (getHeight() - totalHeight) / 2;
 
-        // Убедимся, что массив инициализирован
         if (levelButtons == null || levelButtons.length != 12) {
             levelButtons = new Rect[12];
         }
@@ -444,6 +461,38 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    public void LoadFunction(Canvas canvas, int time) {
+        Paint backgroundPaint = new Paint();
+        backgroundPaint.setColor(Color.BLACK);
+        canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
+
+        Paint textPaint = new Paint();
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(80);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        canvas.drawText("Loading...", getWidth() / 2, getHeight() / 2, textPaint);
+
+        int circleRadius = 30;
+        int circleSpacing = 80;
+        int startX = getWidth() / 2 - (circleSpacing * 2);
+        int y = getHeight() / 2 + 100;
+
+        Paint circlePaint = new Paint();
+        circlePaint.setColor(Color.WHITE);
+
+        for (int i = 0; i < 5; i++) {
+            int x = startX + i * circleSpacing;
+            canvas.drawCircle(x, y, circleRadius, circlePaint);
+        }
+
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                invalidate();
+            }
+        }, 500);
+
+    }
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float touchX = event.getX();
@@ -451,11 +500,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             if (isGamePaused) {
-                if (restartButton != null && restartButton.contains((int) touchX, (int) touchY)) {
-                    restartGame();
-                    return true;
-                }
-
                 if (menuButton != null && menuButton.contains((int) touchX, (int) touchY)) {
                     Log.i("Menu", "MENUUUU");
                     goToMenu();
@@ -466,38 +510,54 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             if (isInMenu && levelButtons != null) {
                 for (int i = 0; i < levelButtons.length; i++) {
                     if (levelButtons[i].contains((int) touchX, (int) touchY)) {
-                        Log.i("lvl", "LvL" + (i+1));
+                        int selectedLevel = i + 1;
+                        Log.i("level", "LvL " + selectedLevel);
+                        isMenuVisible = false;
+                        isInMenu = false;
+                        isLoad = true; // Активируем экран загрузки
+                        new LoadLevelTask().execute(selectedLevel);
                         return true;
                     }
                 }
+            } else {
+                if (touchX < getWidth() / 2) {
+                    playerController.moveLeft();
+                } else {
+                    playerController.moveRight();
+                }
+                return true;
             }
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            playerController.stopLeft();
+            playerController.stopRight();
+            return true;
         }
         return super.onTouchEvent(event);
     }
 
-    private void restartGame() {
-        Log.i("GameView", "Restarting game...");
-        life = new Life(getContext());
-        player = new Player(getContext());
-        player.setBlocks(blockList);
-        bullets.clear();
-        badBoxList.clear();
-        for (int[] badBoxData : BadBoxList.BadBoxs) {
-            badBoxList.add(new BadBox(badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
-                    BitmapFactory.decodeResource(getResources(), R.drawable.bad_box)));
+
+
+
+    private class LoadLevelTask extends AsyncTask<Integer, Void, Void> {
+        @Override
+        protected Void doInBackground(Integer... levels) {
+            int level = levels[0];
+            loadLevel(level);
+            return null;
         }
-        resumeGame();
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            player.setBlocks(blockList);
+            isLoad = false;
+        }
     }
 
     private void goToMenu() {
-        Log.i("GameView", "Going to menu...");
-        Canvas canvas = getHolder().lockCanvas();
-        if (canvas != null) {
-            try {
-                MenuLevelsFunction(canvas);
-            } finally {
-                getHolder().unlockCanvasAndPost(canvas);
-            }
-        }
+        isInMenu = true;
+        isMenuVisible = true;
+        isGamePaused = false;
+        resumeGame();
     }
+
 }
