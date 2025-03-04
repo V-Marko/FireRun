@@ -52,6 +52,23 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private List<Bullet> bullets = new ArrayList<>();
     private List<BadBox> badBoxList = new ArrayList<>();
 
+
+    private int loadingDotsCount = 0; // "Loading..."
+    private final Handler loadingHandler = new Handler(Looper.getMainLooper());
+    private final Runnable loadingRunnable = new Runnable() {
+        @Override
+        public void run() {
+            loadingDotsCount = (loadingDotsCount + 1) % 4; // Цикл от 0 до 3
+            invalidate(); // Перерисовываем экран
+            loadingHandler.postDelayed(this, 500); // Обновляем каждые 500 мс
+        }
+    };
+
+
+
+
+
+
     public boolean isGamePaused() {
         return isGamePaused;
     }
@@ -461,6 +478,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    public void startLoadingAnimation() {
+        int loadingDotsCount = 0;
+        loadingHandler.post(loadingRunnable);
+    }
+
+    public void stopLoadingAnimation() {
+        loadingHandler.removeCallbacks(loadingRunnable);
+    }
+
+
     public void LoadFunction(Canvas canvas, int time) {
         Paint backgroundPaint = new Paint();
         backgroundPaint.setColor(Color.BLACK);
@@ -470,20 +497,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(80);
         textPaint.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText("Loading...", getWidth() / 2, getHeight() / 2, textPaint);
 
-        int circleRadius = 30;
-        int circleSpacing = 80;
-        int startX = getWidth() / 2 - (circleSpacing * 2);
-        int y = getHeight() / 2 + 100;
-
-        Paint circlePaint = new Paint();
-        circlePaint.setColor(Color.WHITE);
-
-        for (int i = 0; i < 5; i++) {
-            int x = startX + i * circleSpacing;
-            canvas.drawCircle(x, y, circleRadius, circlePaint);
-        }
+        String loadingText = "Loading" + getDots(loadingDotsCount);
+        canvas.drawText(loadingText, getWidth() / 2, getHeight() / 2, textPaint);
 
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
@@ -491,8 +507,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 invalidate();
             }
         }, 500);
-
     }
+
+    private String getDots(int count) {
+        StringBuilder dots = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            dots.append(".");
+        }
+        return dots.toString();
+    }
+
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float touchX = event.getX();
@@ -514,7 +539,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         Log.i("level", "LvL " + selectedLevel);
                         isMenuVisible = false;
                         isInMenu = false;
-                        isLoad = true; // Активируем экран загрузки
+                        isLoad = true;
+                        startLoadingAnimation();
                         new LoadLevelTask().execute(selectedLevel);
                         return true;
                     }
@@ -537,7 +563,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
 
 
-
     private class LoadLevelTask extends AsyncTask<Integer, Void, Void> {
         @Override
         protected Void doInBackground(Integer... levels) {
@@ -550,9 +575,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         protected void onPostExecute(Void aVoid) {
             player.setBlocks(blockList);
             isLoad = false;
+            stopLoadingAnimation();
         }
     }
-
     private void goToMenu() {
         isInMenu = true;
         isMenuVisible = true;
