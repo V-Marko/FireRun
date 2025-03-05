@@ -20,9 +20,10 @@ import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.WindowManager;
 
+import androidx.collection.ArrayMap;
+
 import java.util.ArrayList;
 import java.util.List;
-
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean isInMenu = true;
     public int level = 1;
@@ -34,6 +35,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Bitmap playerImage;
     private Paint textPaint;
     private BadBox badBox;
+
+    private SpeedGreenScript speedGreenScript;
+    private SpeedGreenList speedGreenList;
+    private List<SpeedGreenScript> speedGreenScripts = new ArrayList<>();
+
+
     private long lastCollisionTime = 0;
     private final long collisionCooldown = 300;
     private PlayerController playerController;
@@ -100,9 +107,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private void loadLevel(int level) {
         blockList.clear();
         badBoxList.clear();
-        finishScripts.clear(); // Clear previous finish lines
+        finishScripts.clear();
 
-        // Load blocks
         for (int[] blockData : BlocksList.Blocks[level - 1]) {
             Block block;
             switch (blockData[4]) {
@@ -117,6 +123,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             blockList.add(block);
         }
 
+        for (int[] speedGreenData : SpeedGreenList.SpeedGreenList[level - 1]) {
+            SpeedGreenScript speedGreen = new SpeedGreenScript(
+                    speedGreenData[0],  // x
+                    speedGreenData[1],  // y
+                    speedGreenData[2],  // width
+                    speedGreenData[3],  // height
+                    BitmapFactory.decodeResource(getContext().getResources(), R.drawable.speed_green)
+            );
+            speedGreenScripts.add(speedGreen);
+        }
+        
+
         // Load bad boxes
         for (int[] badBoxData : BadBoxList.BadBoxs[level - 1]) {
             BadBox badBox = new BadBox(badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
@@ -124,7 +142,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             badBoxList.add(badBox);
         }
 
-        // Load finish lines
         for (int[] finishData : FinishList.Finishes[level - 1]) {
             FinishScript finishScript = new FinishScript(finishData[0], finishData[1], finishData[2], finishData[3], getContext());
             finishScripts.add(finishScript);
@@ -144,7 +161,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         player = new Player(context);
 
-        loadLevel(level); // Load level 1 by default
+        loadLevel(level); //load level
 
         player.setBlocks(blockList);
 
@@ -159,7 +176,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         textPaint.setTextAlign(Paint.Align.CENTER);
 
         playerController = new PlayerController(player, this);
-        switchCader = new SwitchCader(player, this);
+        switchCader = new SwitchCader(player, this, getSpeedGreenScripts());
+        Bitmap speedGreenBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.speed_green);
     }
 
     public static int getScreenWidth(Context context) {
@@ -216,6 +234,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         for (FinishScript finishScript : finishScripts) {
             finishScript.x += 0; // No movement for finish lines, adjust if needed
+        }
+
+        boolean isTouchingSpeedGreen = false;
+        for (SpeedGreenScript speedGreen : speedGreenScripts) {
+            if (speedGreen.checkCollisionPlayer(player)) {
+                isTouchingSpeedGreen = true;
+                break;
+            }
+        }
+
+        if (isTouchingSpeedGreen) {
+            player.speed = 25f;
+        } else {
+            player.speed = 15f;
         }
 
         for (BadBox badBox : badBoxList) {
@@ -276,6 +308,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (player.checkFlagCollision(finishScripts)) {
             Log.i("Finishh", "finish");
             player.PlayerFinishAnimation();
+            SwitchCader.index = 1;
             goToMenu();
         }
         if (!isOnBlock) {
@@ -284,7 +317,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         player.update();
     }
-
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
@@ -303,9 +335,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawBitmap(background, 0, 0, null);
         }
 
+
+        for (SpeedGreenScript speedGreen : speedGreenScripts) {
+            speedGreen.draw(canvas);
+        }
+
         for (FinishScript finishScript : finishScripts) {
             finishScript.draw(canvas);
         }
+
 
         for (Bullet bullet : bullets) {
             try {
@@ -621,5 +659,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 MainActivity.btnShoot.setVisibility(View.VISIBLE);
             }
         });
+    }
+
+    public List<SpeedGreenScript> getSpeedGreenScripts() {
+        return speedGreenScripts;
     }
 }

@@ -25,13 +25,13 @@ public class Player {
     public boolean TouchRedBlockTOplayerRIGHT = false;
 
     public static float x;
-    private static float y;
-    private float speed;
+    public static float y;
+    public float speed;
 
 
     private boolean movingLeft, movingRight, jumping;
     private boolean isIdle;
-    private float jumpSpeed = 10;
+    public float jumpSpeed = 10;
     public Bitmap bodyImage;
     public Bitmap headImage;
     public Bitmap gunImage;
@@ -402,16 +402,16 @@ public class Player {
 
 
     public void resetPosition() {
-        x = 100; // Начальная позиция X
-        y = 100; // Начальная позиция Y
-        jumpSpeed = 0; // Сброс скорости прыжка
-        jumping = false; // Отключение прыжка
-        currentJumpHeight = 0f; // Сброс высоты прыжка
-        LandRestriction = 500; // Сброс ограничения земли
-        movingLeft = false; // Сброс движения влево
-        movingRight = false; // Сброс движения вправо
-        isFacingLeft = false; // Сброс направления
-        bullets.clear(); // Очистка пуль
+        x = 100;
+        y = 100;
+        jumpSpeed = 0;
+        jumping = false;
+        currentJumpHeight = 0f;
+        LandRestriction = 500;
+        movingLeft = false;
+        movingRight = false;
+        isFacingLeft = false;
+        bullets.clear();
     }
 }
 
