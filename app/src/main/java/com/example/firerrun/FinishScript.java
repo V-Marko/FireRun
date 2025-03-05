@@ -26,12 +26,13 @@ public class FinishScript {
             canvas.drawBitmap(image, x, y, null);
         }
     }
-    public float getX(){
+
+    public float getX() {
         return x;
     }
-    public  float  getY(){
-        return y;
 
+    public float getY() {
+        return y;
     }
 
     public float getWidth() {
@@ -39,6 +40,6 @@ public class FinishScript {
     }
 
     public float getHeight() {
-        return  height;
+        return height;
     }
 }

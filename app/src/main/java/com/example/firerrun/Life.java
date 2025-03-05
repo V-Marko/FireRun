@@ -28,7 +28,6 @@ public class Life {
         textPaint.setTextSize(50);
         textPaint.setTextAlign(Paint.Align.LEFT);
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-
     }
 
     public void draw(Canvas canvas) {
@@ -39,6 +38,7 @@ public class Life {
             playerLose(canvas);
         }
     }
+
     public void playerLose(Canvas canvas) {
         Paint paint = new Paint();
         paint.setColor(Color.BLACK);
@@ -57,10 +57,7 @@ public class Life {
         canvas.drawText("Game Over", x, y, paint);
     }
 
-    public void decreaseLife(int amount) {
-        currentLives -= amount;
-//        if (currentLives <= 0) {
-//            currentLives = 0;
-//        }
-    }
+    public void decreaseLife(int amount) {currentLives -= amount;}
+
+    public void resetLife() {currentLives = maxLives;}
 }

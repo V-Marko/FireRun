@@ -1,5 +1,6 @@
 package com.example.firerrun;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,6 +17,7 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.util.DisplayMetrics;
+import android.view.View;
 import android.view.WindowManager;
 
 import java.util.ArrayList;
@@ -52,22 +54,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private List<Bullet> bullets = new ArrayList<>();
     private List<BadBox> badBoxList = new ArrayList<>();
 
-
     private int loadingDotsCount = 0; // "Loading..."
     private final Handler loadingHandler = new Handler(Looper.getMainLooper());
     private final Runnable loadingRunnable = new Runnable() {
         @Override
         public void run() {
-            loadingDotsCount = (loadingDotsCount + 1) % 4; // Цикл от 0 до 3
-            invalidate(); // Перерисовываем экран
-            loadingHandler.postDelayed(this, 500); // Обновляем каждые 500 мс
+            loadingDotsCount = (loadingDotsCount + 1) % 4;
+            invalidate();
+            loadingHandler.postDelayed(this, 500);
         }
     };
-
-
-
-
-
 
     public boolean isGamePaused() {
         return isGamePaused;
@@ -89,10 +85,24 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         } else {
             gameThread.setRunning(true);
         }
+
+        ((Activity) getContext()).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                MainActivity.btnLeft.setVisibility(View.VISIBLE);
+                MainActivity.btnRight.setVisibility(View.VISIBLE);
+                MainActivity.btnJump.setVisibility(View.VISIBLE);
+                MainActivity.btnShoot.setVisibility(View.VISIBLE);
+            }
+        });
     }
 
     private void loadLevel(int level) {
         blockList.clear();
+        badBoxList.clear();
+        finishScripts.clear(); // Clear previous finish lines
+
+        // Load blocks
         for (int[] blockData : BlocksList.Blocks[level - 1]) {
             Block block;
             switch (blockData[4]) {
@@ -106,7 +116,22 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             block = new Block(getContext(), blockData[0], blockData[1], blockData[2], blockData[3], BlockID);
             blockList.add(block);
         }
+
+        // Load bad boxes
+        for (int[] badBoxData : BadBoxList.BadBoxs[level - 1]) {
+            BadBox badBox = new BadBox(badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
+                    BitmapFactory.decodeResource(getContext().getResources(), R.drawable.bad_box));
+            badBoxList.add(badBox);
+        }
+
+        // Load finish lines
+        for (int[] finishData : FinishList.Finishes[level - 1]) {
+            FinishScript finishScript = new FinishScript(finishData[0], finishData[1], finishData[2], finishData[3], getContext());
+            finishScripts.add(finishScript);
+        }
+
         player.setBlocks(blockList);
+        player.resetPosition();
         this.level = level;
     }
 
@@ -119,13 +144,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         player = new Player(context);
 
-        loadLevel(level);
-
-        for (int[] badBoxData : BadBoxList.BadBoxs) {
-            BadBox badBox = new BadBox(badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
-                    BitmapFactory.decodeResource(context.getResources(), R.drawable.bad_box));
-            badBoxList.add(badBox);
-        }
+        loadLevel(level); // Load level 1 by default
 
         player.setBlocks(blockList);
 
@@ -141,8 +160,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         playerController = new PlayerController(player, this);
         switchCader = new SwitchCader(player, this);
-
-        finishScripts.add(new FinishScript(4500, 500, 200, 200, getContext()));
     }
 
     public static int getScreenWidth(Context context) {
@@ -198,7 +215,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         switchCader.updateCader();
 
         for (FinishScript finishScript : finishScripts) {
-            finishScript.x += 0;
+            finishScript.x += 0; // No movement for finish lines, adjust if needed
         }
 
         for (BadBox badBox : badBoxList) {
@@ -257,12 +274,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         if (player.checkFlagCollision(finishScripts)) {
-            level += 1;
             Log.i("Finishh", "finish");
             player.PlayerFinishAnimation();
             goToMenu();
         }
-
         if (!isOnBlock) {
             player.LandRestriction = 500;
         }
@@ -284,7 +299,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
 
-        // Остальной код отрисовки игры
         if (background != null) {
             canvas.drawBitmap(background, 0, 0, null);
         }
@@ -313,7 +327,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             PauseFunction(canvas);
         }
     }
-
 
     public Player getPlayer() {
         return player;
@@ -479,14 +492,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void startLoadingAnimation() {
-        int loadingDotsCount = 0;
         loadingHandler.post(loadingRunnable);
     }
 
     public void stopLoadingAnimation() {
         loadingHandler.removeCallbacks(loadingRunnable);
     }
-
 
     public void LoadFunction(Canvas canvas, int time) {
         Paint backgroundPaint = new Paint();
@@ -517,7 +528,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return dots.toString();
     }
 
-
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float touchX = event.getX();
@@ -545,23 +555,24 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         return true;
                     }
                 }
-            } else {
+            } else if (!isGamePaused && !isLoad) {
                 if (touchX < getWidth() / 2) {
                     playerController.moveLeft();
                 } else {
                     playerController.moveRight();
+                    shoot();
                 }
                 return true;
             }
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
-            playerController.stopLeft();
-            playerController.stopRight();
-            return true;
+            if (!isInMenu && !isGamePaused && !isLoad) {
+                playerController.stopLeft();
+                playerController.stopRight();
+                return true;
+            }
         }
         return super.onTouchEvent(event);
     }
-
-
 
     private class LoadLevelTask extends AsyncTask<Integer, Void, Void> {
         @Override
@@ -575,14 +586,40 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         protected void onPostExecute(Void aVoid) {
             player.setBlocks(blockList);
             isLoad = false;
+            isInMenu = false;
             stopLoadingAnimation();
+            resumeGame();
+
+            ((Activity) getContext()).runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    MainActivity.btnLeft.setVisibility(View.VISIBLE);
+                    MainActivity.btnRight.setVisibility(View.VISIBLE);
+                    MainActivity.btnJump.setVisibility(View.VISIBLE);
+                    MainActivity.btnShoot.setVisibility(View.VISIBLE);
+                }
+            });
         }
     }
+
     private void goToMenu() {
         isInMenu = true;
         isMenuVisible = true;
         isGamePaused = false;
+        isLoad = false;
+        bullets.clear();
+        player.resetPosition();
+        life.resetLife();
         resumeGame();
-    }
 
+        ((Activity) getContext()).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                MainActivity.btnLeft.setVisibility(View.VISIBLE);
+                MainActivity.btnRight.setVisibility(View.VISIBLE);
+                MainActivity.btnJump.setVisibility(View.VISIBLE);
+                MainActivity.btnShoot.setVisibility(View.VISIBLE);
+            }
+        });
+    }
 }

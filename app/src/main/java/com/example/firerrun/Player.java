@@ -401,6 +401,17 @@ public class Player {
     }
 
 
-
+    public void resetPosition() {
+        x = 100; // Начальная позиция X
+        y = 100; // Начальная позиция Y
+        jumpSpeed = 0; // Сброс скорости прыжка
+        jumping = false; // Отключение прыжка
+        currentJumpHeight = 0f; // Сброс высоты прыжка
+        LandRestriction = 500; // Сброс ограничения земли
+        movingLeft = false; // Сброс движения влево
+        movingRight = false; // Сброс движения вправо
+        isFacingLeft = false; // Сброс направления
+        bullets.clear(); // Очистка пуль
+    }
 }
 
