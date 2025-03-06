@@ -10,7 +10,7 @@ import java.util.List;
 public class SwitchCader {
     public static boolean isCameraMoving;
     private List<FinishScript> finishScripts;
-    private List<SpeedGreenScript> speedGreenScripts; // Добавляем список объектов SpeedGreenScript
+    private List<SpeedGreenScript> speedGreenScripts;
     private Player player;
     private GameView gameView;
     private static float screenSize;
@@ -30,7 +30,7 @@ public class SwitchCader {
     }
 
     public void updateCader() {
-        float threshold = (screenSize / 4);
+        float threshold = screenSize * 0.4f;
 
         if (isAnimating) {
             return;
@@ -39,14 +39,11 @@ public class SwitchCader {
         if (player.getX() > threshold && player.getVelocityX() > 0) {
             gameView.post(() -> startAnimationLeft());
             index++;
-        } else if (player.getX() < threshold && player.getVelocityX() < 0) {
+        } else if (player.getX() < (screenSize - threshold) && player.getVelocityX() < 0) {
             if (index > 1) {
                 gameView.post(() -> startAnimationRight());
                 index--;
             }
-        }
-        for (FinishScript finishScript : finishScripts) {
-            finishScript.x += 0;
         }
     }
 
@@ -62,8 +59,13 @@ public class SwitchCader {
         isAnimating = true;
         isCameraMoving = true;
 
-        animator = ValueAnimator.ofFloat(0, offsetValue);
-        animator.setDuration(500);
+        float dynamicOffsetSpeed = offsetValue;
+        if (gameView.getLevel() == 2) {
+            dynamicOffsetSpeed *= 1.5f;
+        }
+
+        animator = ValueAnimator.ofFloat(0, dynamicOffsetSpeed);
+        animator.setDuration(400);
         animator.setInterpolator(new AccelerateDecelerateInterpolator());
         animator.addUpdateListener(animation -> {
             float offset = (float) animation.getAnimatedValue();
@@ -80,9 +82,12 @@ public class SwitchCader {
                 block.x += deltaOffset;
             }
 
-            // Исправляем цикл для списка объектов SpeedGreenScript
             for (SpeedGreenScript sgs : speedGreenScripts) {
                 sgs.x += deltaOffset;
+            }
+
+            for (BlowingStone stone : gameView.blowingStones) {
+                stone.x += deltaOffset;
             }
 
             for (BadBox badBox : gameView.getBadBoxList()) {

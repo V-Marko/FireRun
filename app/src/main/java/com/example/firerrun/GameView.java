@@ -36,8 +36,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Paint textPaint;
     private BadBox badBox;
 
-    private SpeedGreenScript speedGreenScript;
-    private SpeedGreenList speedGreenList;
     private List<SpeedGreenScript> speedGreenScripts = new ArrayList<>();
 
 
@@ -60,6 +58,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private List<Block> blockList = new ArrayList<>();
     private List<Bullet> bullets = new ArrayList<>();
     private List<BadBox> badBoxList = new ArrayList<>();
+
+
+    public List<BlowingStone> blowingStones = new ArrayList<>();
+    private long lastDropTime = 0;
+    private final long dropInterval = 2000;
 
     private int loadingDotsCount = 0; // "Loading..."
     private final Handler loadingHandler = new Handler(Looper.getMainLooper());
@@ -108,43 +111,66 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         blockList.clear();
         badBoxList.clear();
         finishScripts.clear();
+        blowingStones.clear(); // Очищаем список камней
 
-        for (int[] blockData : BlocksList.Blocks[level - 1]) {
-            Block block;
-            switch (blockData[4]) {
-                case 0: BlockID = R.drawable.block; break;
-                case 1: BlockID = R.drawable.block2; break;
-                case 2: BlockID = R.drawable.oak_tree; break;
-                case 3: BlockID = R.drawable.oak2; break;
-                case 4: BlockID = R.drawable.barrel; break;
-                case 5: BlockID = R.drawable.finish; break;
+        // Загружаем блоки (без изменений)
+        if (level - 1 < BlocksList.Blocks.length) {
+            for (int[] blockData : BlocksList.Blocks[level - 1]) {
+                Block block;
+                switch (blockData[4]) {
+                    case 0: BlockID = R.drawable.block; break;
+                    case 1: BlockID = R.drawable.block2; break;
+                    case 2: BlockID = R.drawable.oak_tree; break;
+                    case 3: BlockID = R.drawable.oak2; break;
+                    case 4: BlockID = R.drawable.barrel; break;
+                    case 5: BlockID = R.drawable.finish; break;
+                }
+                block = new Block(getContext(), blockData[0], blockData[1], blockData[2], blockData[3], BlockID);
+                blockList.add(block);
             }
-            block = new Block(getContext(), blockData[0], blockData[1], blockData[2], blockData[3], BlockID);
-            blockList.add(block);
         }
 
-        for (int[] speedGreenData : SpeedGreenList.SpeedGreenList[level - 1]) {
-            SpeedGreenScript speedGreen = new SpeedGreenScript(
-                    speedGreenData[0],  // x
-                    speedGreenData[1],  // y
-                    speedGreenData[2],  // width
-                    speedGreenData[3],  // height
-                    BitmapFactory.decodeResource(getContext().getResources(), R.drawable.speed_green)
-            );
-            speedGreenScripts.add(speedGreen);
-        }
-        
-
-        // Load bad boxes
-        for (int[] badBoxData : BadBoxList.BadBoxs[level - 1]) {
-            BadBox badBox = new BadBox(badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
-                    BitmapFactory.decodeResource(getContext().getResources(), R.drawable.bad_box));
-            badBoxList.add(badBox);
+        // Загружаем зеленые зоны скорости (без изменений)
+        if (level - 1 < SpeedGreenList.SpeedGreenList.length) {
+            for (int[] speedGreenData : SpeedGreenList.SpeedGreenList[level - 1]) {
+                SpeedGreenScript speedGreen = new SpeedGreenScript(
+                        speedGreenData[0], speedGreenData[1], speedGreenData[2], speedGreenData[3],
+                        BitmapFactory.decodeResource(getContext().getResources(), R.drawable.speed_green)
+                );
+                speedGreenScripts.add(speedGreen);
+            }
         }
 
-        for (int[] finishData : FinishList.Finishes[level - 1]) {
-            FinishScript finishScript = new FinishScript(finishData[0], finishData[1], finishData[2], finishData[3], getContext());
-            finishScripts.add(finishScript);
+        // Загружаем плохие ящики (без изменений)
+        if (level - 1 < BadBoxList.BadBoxs.length) {
+            for (int[] badBoxData : BadBoxList.BadBoxs[level - 1]) {
+                BadBox badBox = new BadBox(badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
+                        BitmapFactory.decodeResource(getContext().getResources(), R.drawable.bad_box));
+                badBoxList.add(badBox);
+            }
+        }
+
+        // Загружаем финиш (без изменений)
+        if (level - 1 < FinishList.Finishes.length) {
+            for (int[] finishData : FinishList.Finishes[level - 1]) {
+                FinishScript finishScript = new FinishScript(finishData[0], finishData[1], finishData[2], finishData[3], getContext());
+                finishScripts.add(finishScript);
+            }
+        }
+
+        // Загружаем падающие камни
+        if (level - 1 < BlowingStoneList.BlowingStones.length) {
+            for (int[] stoneData : BlowingStoneList.BlowingStones[level - 1]) {
+                BlowingStone stone = new BlowingStone(
+                        stoneData[0],
+                        -stoneData[3],
+                        15f,
+                        stoneData[2],
+                        stoneData[3],
+                        getContext()
+                );
+                blowingStones.add(stone);
+            }
         }
 
         player.setBlocks(blockList);
@@ -232,8 +258,27 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         switchCader.updateCader();
 
+        long currentTime = System.currentTimeMillis();
+
+        for (BlowingStone stone : blowingStones) {
+            stone.update();
+
+            if (stone.getY() > getHeight()) {
+                stone.y = -stone.getHeight();
+            }
+
+            if (stone.checkCollisionWithPlayer(player)) {
+                life.decreaseLife(40);
+                stone.y = -stone.getHeight();
+            }
+        }
+
+
         for (FinishScript finishScript : finishScripts) {
-            finishScript.x += 0; // No movement for finish lines, adjust if needed
+            finishScript.x += 0;
+        }
+        if (currentTime - lastDropTime >= dropInterval) {
+            lastDropTime = currentTime;
         }
 
         boolean isTouchingSpeedGreen = false;
@@ -245,7 +290,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         if (isTouchingSpeedGreen) {
-            player.speed = 25f;
+            player.speed = 35f;
         } else {
             player.speed = 15f;
         }
@@ -288,7 +333,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         for (BadBox badBox : badBoxList) {
             if (badBox.checkCollisionPlayer(player)) {
-                long currentTime = System.currentTimeMillis();
                 if (currentTime - lastCollisionTime >= collisionCooldown) {
                     lastCollisionTime = currentTime;
                     life.decreaseLife(20);
@@ -317,6 +361,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         player.update();
     }
+
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
@@ -335,6 +380,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawBitmap(background, 0, 0, null);
         }
 
+        for (BlowingStone stone : blowingStones) {
+            stone.draw(canvas);
+        }
 
         for (SpeedGreenScript speedGreen : speedGreenScripts) {
             speedGreen.draw(canvas);
@@ -343,7 +391,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         for (FinishScript finishScript : finishScripts) {
             finishScript.draw(canvas);
         }
-
 
         for (Bullet bullet : bullets) {
             try {
@@ -661,7 +708,5 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         });
     }
 
-    public List<SpeedGreenScript> getSpeedGreenScripts() {
-        return speedGreenScripts;
-    }
+    public List<SpeedGreenScript> getSpeedGreenScripts() {return speedGreenScripts;}
 }

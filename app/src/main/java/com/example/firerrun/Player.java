@@ -414,4 +414,3 @@ public class Player {
         bullets.clear();
     }
 }
-

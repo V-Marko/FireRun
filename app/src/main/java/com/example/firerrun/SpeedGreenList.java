@@ -5,7 +5,12 @@ public class SpeedGreenList {
             {},//level 1
             {//level 2
                     // x,  y,   w,  h
-                    {400, 670, 500, 30},
+                    {700, 670, 500, 30},
+            },
+            {//level 3
+                    // x,  y,   w,  h
+//                    {700, 670, 500, 30},
+
             }
     };
 }
