@@ -74,7 +74,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             loadingHandler.postDelayed(this, 500);
         }
     };
-
+    private List<BoomScript> boomScripts = new ArrayList<>();
     public boolean isGamePaused() {
         return isGamePaused;
     }
@@ -111,9 +111,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         blockList.clear();
         badBoxList.clear();
         finishScripts.clear();
-        blowingStones.clear(); // Очищаем список камней
+        blowingStones.clear();
+        boomScripts.clear();
 
-        // Загружаем блоки (без изменений)
         if (level - 1 < BlocksList.Blocks.length) {
             for (int[] blockData : BlocksList.Blocks[level - 1]) {
                 Block block;
@@ -123,14 +123,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     case 2: BlockID = R.drawable.oak_tree; break;
                     case 3: BlockID = R.drawable.oak2; break;
                     case 4: BlockID = R.drawable.barrel; break;
-                    case 5: BlockID = R.drawable.finish; break;
                 }
                 block = new Block(getContext(), blockData[0], blockData[1], blockData[2], blockData[3], BlockID);
                 blockList.add(block);
             }
         }
 
-        // Загружаем зеленые зоны скорости (без изменений)
         if (level - 1 < SpeedGreenList.SpeedGreenList.length) {
             for (int[] speedGreenData : SpeedGreenList.SpeedGreenList[level - 1]) {
                 SpeedGreenScript speedGreen = new SpeedGreenScript(
@@ -141,7 +139,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        // Загружаем плохие ящики (без изменений)
         if (level - 1 < BadBoxList.BadBoxs.length) {
             for (int[] badBoxData : BadBoxList.BadBoxs[level - 1]) {
                 BadBox badBox = new BadBox(badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
@@ -150,7 +147,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        // Загружаем финиш (без изменений)
         if (level - 1 < FinishList.Finishes.length) {
             for (int[] finishData : FinishList.Finishes[level - 1]) {
                 FinishScript finishScript = new FinishScript(finishData[0], finishData[1], finishData[2], finishData[3], getContext());
@@ -158,18 +154,22 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        // Загружаем падающие камни
         if (level - 1 < BlowingStoneList.BlowingStones.length) {
             for (int[] stoneData : BlowingStoneList.BlowingStones[level - 1]) {
                 BlowingStone stone = new BlowingStone(
-                        stoneData[0],
-                        -stoneData[3],
-                        15f,
-                        stoneData[2],
-                        stoneData[3],
-                        getContext()
+                        stoneData[0], -stoneData[3], 15f, stoneData[2], stoneData[3], getContext()
                 );
                 blowingStones.add(stone);
+            }
+        }
+
+        if (level - 1 < BoomList.BoomList.length) {
+            for (int[] boomData : BoomList.BoomList[level - 1]) {
+                BoomScript boom = new BoomScript(
+                        boomData[0], -boomData[3],
+                        boomData[2], boomData[3], 250, 250, getContext()
+                );
+                boomScripts.add(boom);
             }
         }
 
@@ -187,7 +187,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         player = new Player(context);
 
-        loadLevel(level); //load level
+        loadLevel(level);
 
         player.setBlocks(blockList);
 
@@ -262,17 +262,37 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         for (BlowingStone stone : blowingStones) {
             stone.update();
-
             if (stone.getY() > getHeight()) {
                 stone.y = -stone.getHeight();
             }
-
             if (stone.checkCollisionWithPlayer(player)) {
                 life.decreaseLife(40);
                 stone.y = -stone.getHeight();
             }
         }
 
+        for (BoomScript boom : boomScripts) {
+            boom.update();
+
+            if (boom.getY() > getHeight()) {
+                boom.y = -boom.getHeight();
+            }
+
+            if (boom.checkCollisionWithPlayer(player)) {
+                life.decreaseLife(100);
+                boom.y = -boom.getHeight();
+
+                boom.startAnimation();
+            }
+
+            for (Block block : blockList) {
+                if (boom.checkCollisionWithBlock(block)) {
+                    boom.startAnimation();
+                    boom.y = block.getY() - boom.getHeight();
+                    break;
+                }
+            }
+        }
 
         for (FinishScript finishScript : finishScripts) {
             finishScript.x += 0;
@@ -302,12 +322,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         for (int i = bullets.size() - 1; i >= 0; i--) {
             Bullet bullet = bullets.get(i);
             bullet.update();
-
             if (bullet.getX() > getWidth() || bullet.getX() < 0) {
                 bullets.remove(i);
                 continue;
             }
-
             for (BadBox badBox : badBoxList) {
                 if (badBox.checkCollisionBullet(bullet)) {
                     bullets.remove(i);
@@ -315,7 +333,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     break;
                 }
             }
-
             for (Block block : blockList) {
                 if (bullet.getX() < block.getX() + block.getWidth() &&
                         bullet.getX() + Bullet.width > block.getX() &&
@@ -361,7 +378,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         player.update();
     }
-
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
@@ -384,6 +400,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             stone.draw(canvas);
         }
 
+        for (BoomScript boom : boomScripts) {
+            boom.draw(canvas);
+        }
+
         for (SpeedGreenScript speedGreen : speedGreenScripts) {
             speedGreen.draw(canvas);
         }
@@ -399,9 +419,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         player.draw(canvas);
+
         for (BadBox badBox : badBoxList) {
             badBox.draw(canvas);
         }
+
         life.draw(canvas);
 
         for (Block block : blockList) {

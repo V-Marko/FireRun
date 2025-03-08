@@ -15,11 +15,10 @@ public class BlowingStone {
     private float rotation;
     private float rotationSpeed;
 
-    // Конструктор
     public BlowingStone(float x, float y, float speed, float width, float height, Context context) {
         this.x = x;
-        this.y = y; // Начинаем выше экрана
-        this.speed = speed; // Скорость падения
+        this.y = y;
+        this.speed = speed;
         this.width = width;
         this.height = height;
         this.bitmap = Bitmap.createScaledBitmap(
@@ -27,29 +26,26 @@ public class BlowingStone {
                 (int) width, (int) height, false
         );
         this.rotation = 0f;
-        this.rotationSpeed = 10f; // Скорость вращения
+        this.rotationSpeed = 10f;
     }
 
-    // Обновление состояния камня
     public void update() {
-        y += speed; // Камень падает вниз с заданной скоростью
-        rotation += rotationSpeed; // Вращение
+        y += speed;
+        rotation += rotationSpeed;
         if (rotation >= 360f) {
-            rotation -= 360f; // Сбрасываем вращение после полного круга
+            rotation -= 360f;
         }
     }
 
-    // Отрисовка камня
     public void draw(Canvas canvas) {
         if (bitmap != null) {
             canvas.save();
-            canvas.rotate(rotation, x + width / 2, y + height / 2); // Вращаем камень
-            canvas.drawBitmap(bitmap, x, y, null); // Рисуем камень
+            canvas.rotate(rotation, x + width / 2, y + height / 2);
+            canvas.drawBitmap(bitmap, x, y, null);
             canvas.restore();
         }
     }
 
-    // Проверка столкновения с игроком
     public boolean checkCollisionWithPlayer(Player player) {
         return (x < player.getX() + player.getWidth() &&
                 x + width > player.getX() &&
@@ -57,7 +53,6 @@ public class BlowingStone {
                 y + height > player.getY());
     }
 
-    // Геттеры
     public float getX() {
         return x;
     }

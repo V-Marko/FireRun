@@ -9,7 +9,9 @@ public class SpeedGreenList {
             },
             {//level 3
                     // x,  y,   w,  h
-//                    {700, 670, 500, 30},
+
+            },
+            {
 
             }
     };
