@@ -1,5 +1,7 @@
 package com.example.firerrun;
 
+import static kotlin.text.Typography.bullet;
+
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -35,6 +37,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Bitmap playerImage;
     private Paint textPaint;
     private BadBox badBox;
+    private Bullet bullet;
 
     private List<SpeedGreenScript> speedGreenScripts = new ArrayList<>();
 
@@ -64,7 +67,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private long lastDropTime = 0;
     private final long dropInterval = 2000;
 
-    private int loadingDotsCount = 0; // "Loading..."
+    private int loadingDotsCount = 0; // "Loading..." int
     private final Handler loadingHandler = new Handler(Looper.getMainLooper());
     private final Runnable loadingRunnable = new Runnable() {
         @Override
@@ -74,7 +77,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             loadingHandler.postDelayed(this, 500);
         }
     };
-    private List<BoomScript> boomScripts = new ArrayList<>();
+    public List<BoomScript> boomScripts = new ArrayList<>();
     public boolean isGamePaused() {
         return isGamePaused;
     }
@@ -284,6 +287,23 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
                 boom.startAnimation();
             }
+
+
+            for (int i = bullets.size() - 1; i >= 0; i--) {
+                Bullet bullet = bullets.get(i);
+                if (boom.checkCollisionWithBullet(bullet)) {
+                    Log.d("BoomCollision", "Bullet hit Boom at (" + boom.x + ", " + boom.y + ")");
+
+                    boom.startAnimation();
+                    boom.y = bullet.getY() - boom.getHeight();
+
+                    bullets.remove(i);
+                    break;
+                }
+            }
+
+
+
 
             for (Block block : blockList) {
                 if (boom.checkCollisionWithBlock(block)) {

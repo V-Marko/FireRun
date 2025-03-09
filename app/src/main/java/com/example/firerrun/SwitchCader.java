@@ -97,6 +97,9 @@ public class SwitchCader {
             for (Bullet bullet : gameView.getBullets()) {
                 bullet.x += deltaOffset;
             }
+            for (BoomScript boom : gameView.boomScripts) {
+                boom.x +=deltaOffset;
+            }
 
             player.setX(player.getX() + deltaOffset);
 

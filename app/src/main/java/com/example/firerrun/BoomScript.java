@@ -46,7 +46,6 @@ public class BoomScript {
             y += speed;
         }
     }
-
     public void draw(Canvas canvas) {
         if (isAnimating) {
             float explosionX = x + (width - explosionWidth) / 2;
@@ -62,6 +61,12 @@ public class BoomScript {
                 player.getX() + player.getWidth() > x &&
                 player.getY() < y + height &&
                 player.getY() + player.getHeight() > y;
+    }
+    public boolean checkCollisionWithBullet(Bullet bullet) {
+        return bullet.getX() < x + width &&
+                bullet.getX() + bullet.getWidth() > x &&
+                bullet.getY() < y + height &&
+                bullet.getY() + bullet.getHeight() > y;
     }
 
     public boolean checkCollisionWithBlock(Block block) {
