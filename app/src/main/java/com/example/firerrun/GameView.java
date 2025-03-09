@@ -169,8 +169,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (level - 1 < BoomList.BoomList.length) {
             for (int[] boomData : BoomList.BoomList[level - 1]) {
                 BoomScript boom = new BoomScript(
-                        boomData[0], -boomData[3],
-                        boomData[2], boomData[3], 250, 250, getContext()
+                        boomData[0],          // x
+                        -boomData[3],         // y (start off-screen)
+                        boomData[2],          // width
+                        boomData[3],          // height
+                        250,                  // explosionWidth
+                        250,                  // explosionHeight
+                        boomData[4],          // delayMs
+                        getContext()
                 );
                 boomScripts.add(boom);
             }

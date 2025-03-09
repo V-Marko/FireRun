@@ -17,15 +17,20 @@ public class BoomScript {
     private Bitmap animationBitmap;
     private boolean isAnimating = false;
     private long animationStartTime;
-    private final long animationDuration = 100;
+    private final long animationDuration = 500; // Increased for visibility
+    private long delayMs; // Delay before falling
+    private long startTime; // Time when the boom was created
+    private boolean hasStartedFalling = false;
 
-    public BoomScript(float x, float y, float width, float height, float explosionWidth, float explosionHeight, Context context) {
+    public BoomScript(float x, float y, float width, float height, float explosionWidth, float explosionHeight, long delayMs, Context context) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.explosionWidth = explosionWidth;
         this.explosionHeight = explosionHeight;
+        this.delayMs = delayMs;
+        this.startTime = System.currentTimeMillis(); // Record creation time
         this.bitmap = Bitmap.createScaledBitmap(
                 BitmapFactory.decodeResource(context.getResources(), R.drawable.boom),
                 (int) width, (int) height, false
@@ -40,12 +45,18 @@ public class BoomScript {
         if (isAnimating) {
             if (System.currentTimeMillis() - animationStartTime >= animationDuration) {
                 isAnimating = false;
-                y = -height;
+                y = -height; // Reset position after animation
+            }
+        } else if (!hasStartedFalling) {
+            // Check if delay has passed
+            if (System.currentTimeMillis() - startTime >= delayMs) {
+                hasStartedFalling = true;
             }
         } else {
-            y += speed;
+            y += speed; // Start falling after delay
         }
     }
+
     public void draw(Canvas canvas) {
         if (isAnimating) {
             float explosionX = x + (width - explosionWidth) / 2;
@@ -62,6 +73,7 @@ public class BoomScript {
                 player.getY() < y + height &&
                 player.getY() + player.getHeight() > y;
     }
+
     public boolean checkCollisionWithBullet(Bullet bullet) {
         return bullet.getX() < x + width &&
                 bullet.getX() + bullet.getWidth() > x &&
