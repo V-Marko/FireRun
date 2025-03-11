@@ -98,7 +98,11 @@ public class SwitchCader {
                 bullet.x += deltaOffset;
             }
             for (BoomScript boom : gameView.boomScripts) {
-                boom.x +=deltaOffset;
+                boom.x += deltaOffset;
+            }
+            for (Coolest coolest : gameView.coolestList) {
+                coolest.x += deltaOffset;
+
             }
 
             player.setX(player.getX() + deltaOffset);

@@ -38,6 +38,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Paint textPaint;
     private BadBox badBox;
     private Bullet bullet;
+    private Coolest coolest;
 
     private List<SpeedGreenScript> speedGreenScripts = new ArrayList<>();
 
@@ -61,7 +62,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private List<Block> blockList = new ArrayList<>();
     private List<Bullet> bullets = new ArrayList<>();
     private List<BadBox> badBoxList = new ArrayList<>();
-
+    public List<Coolest> coolestList = new ArrayList<>();
 
     public List<BlowingStone> blowingStones = new ArrayList<>();
     private long lastDropTime = 0;
@@ -116,6 +117,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         finishScripts.clear();
         blowingStones.clear();
         boomScripts.clear();
+        coolestList.clear();
 
         if (level - 1 < BlocksList.Blocks.length) {
             for (int[] blockData : BlocksList.Blocks[level - 1]) {
@@ -168,6 +170,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         if (level - 1 < BoomList.BoomList.length) {
             for (int[] boomData : BoomList.BoomList[level - 1]) {
+                long delayMs = (boomData.length > 4) ? boomData[4] : 0;
                 BoomScript boom = new BoomScript(
                         boomData[0],          // x
                         -boomData[3],         // y (start off-screen)
@@ -175,10 +178,24 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         boomData[3],          // height
                         250,                  // explosionWidth
                         250,                  // explosionHeight
-                        boomData[4],          // delayMs
+                        delayMs,              // delayMs
                         getContext()
                 );
                 boomScripts.add(boom);
+            }
+        }
+
+        // Добавляем загрузку Coolest
+        if (level - 1 >= 0 && level - 1 < CoolestList.CoolestList.length) {
+            for (int[] coolestData : CoolestList.CoolestList[level - 1]) {
+                Coolest coolest = new Coolest(
+                        coolestData[0],       // x
+                        coolestData[1],       // y
+                        coolestData[2],       // width
+                        coolestData[3],       // height
+                        coolestData[4]        // rotationSpeed
+                );
+                coolestList.add(coolest);
             }
         }
 
@@ -186,7 +203,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         player.resetPosition();
         this.level = level;
     }
-
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
         getHolder().addCallback(this);
@@ -213,6 +229,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         playerController = new PlayerController(player, this);
         switchCader = new SwitchCader(player, this, getSpeedGreenScripts());
         Bitmap speedGreenBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.speed_green);
+
+
     }
 
     public static int getScreenWidth(Context context) {
@@ -290,32 +308,40 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             if (boom.checkCollisionWithPlayer(player)) {
                 life.decreaseLife(100);
                 boom.y = -boom.getHeight();
-
                 boom.startAnimation();
             }
-
 
             for (int i = bullets.size() - 1; i >= 0; i--) {
                 Bullet bullet = bullets.get(i);
                 if (boom.checkCollisionWithBullet(bullet)) {
                     Log.d("BoomCollision", "Bullet hit Boom at (" + boom.x + ", " + boom.y + ")");
-
                     boom.startAnimation();
                     boom.y = bullet.getY() - boom.getHeight();
-
                     bullets.remove(i);
                     break;
                 }
             }
-
-
-
 
             for (Block block : blockList) {
                 if (boom.checkCollisionWithBlock(block)) {
                     boom.startAnimation();
                     boom.y = block.getY() - boom.getHeight();
                     break;
+                }
+            }
+        }
+
+        // Добавляем кулдаун для столкновения с Coolest
+        long lastCoolestCollisionTime = 0;
+        final long coolestCollisionCooldown = 500; // 0.5 секунды
+
+        for (Coolest coolest : coolestList) {
+            coolest.update();
+            if (coolest.checkCollisionWithPlayer(player)) {
+                if (currentTime - lastCoolestCollisionTime >= coolestCollisionCooldown) {
+                    life.decreaseLife(10);
+                    lastCoolestCollisionTime = currentTime;
+                    Log.i("Coolest", "Player collided with Coolest and lost 10 life");
                 }
             }
         }
@@ -364,6 +390,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         bullet.getX() + Bullet.width > block.getX() &&
                         bullet.getY() < block.getY() + block.getHeight() &&
                         bullet.getY() + Bullet.height > block.getY()) {
+                    bullets.remove(i);
+                    break;
+                }
+            }
+            for (Coolest coolest : coolestList) {
+                if (coolest.checkCollisionWithBullet(bullet)) {
                     bullets.remove(i);
                     break;
                 }
@@ -450,6 +482,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             badBox.draw(canvas);
         }
 
+        for (Coolest coolest : coolestList) {
+            coolest.draw(canvas);
+        }
+
         life.draw(canvas);
 
         for (Block block : blockList) {
@@ -460,6 +496,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             PauseFunction(canvas);
         }
     }
+
 
     public Player getPlayer() {
         return player;

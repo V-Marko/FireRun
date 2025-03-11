@@ -16,6 +16,9 @@ public class FinishList {
             {
                     {5400, 500, 200, 200},
 
+            },
+            {
+
             }
     };
 }
