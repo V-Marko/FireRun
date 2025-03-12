@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
@@ -79,6 +80,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     };
     public List<BoomScript> boomScripts = new ArrayList<>();
+    public List<SmallRunBoom> smallRunBooms = new ArrayList<>();
     public boolean isGamePaused() {
         return isGamePaused;
     }
@@ -118,6 +120,40 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         blowingStones.clear();
         boomScripts.clear();
         coolestList.clear();
+        smallRunBooms.clear();
+        speedGreenScripts.clear();
+
+        if (level - 1 >= 0 && level - 1 < BoomList.BoomList.length) {
+            for (int[] boomData : BoomList.BoomList[level - 1]) {
+                BoomScript boom = new BoomScript(
+                        boomData[0],           // x
+                        boomData[1],           // y
+                        boomData[2],           // width
+                        boomData[3],           // height
+                        boomData[2] * 1.5f,   // explosionWidth (example scaling)
+                        boomData[3] * 1.5f,   // explosionHeight (example scaling)
+                        boomData[4],           // delayMs
+                        getContext()           // Context
+                );
+                boomScripts.add(boom);
+            }
+        }
+
+
+        if (level - 1 < SmallRunBoomList.SmallRunBoomList.length) {
+            for (int[] boomData : SmallRunBoomList.SmallRunBoomList[level - 1]) {
+                SmallRunBoom smallBoom = new SmallRunBoom(
+                        boomData[0],    // x
+                        boomData[1],    // y
+                        boomData[2],    // width
+                        boomData[3],    // height
+                        boomData[4],    // speed Rotate
+                        boomData[5],     // speed run
+                        boomData[6]     // distance
+                );
+                smallRunBooms.add(smallBoom);
+            }
+        }
 
         if (level - 1 < BlocksList.Blocks.length) {
             for (int[] blockData : BlocksList.Blocks[level - 1]) {
@@ -168,20 +204,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        if (level - 1 < BoomList.BoomList.length) {
-            for (int[] boomData : BoomList.BoomList[level - 1]) {
-                long delayMs = (boomData.length > 4) ? boomData[4] : 0;
-                BoomScript boom = new BoomScript(
-                        boomData[0],          // x
-                        -boomData[3],         // y (start off-screen)
-                        boomData[2],          // width
-                        boomData[3],          // height
-                        250,                  // explosionWidth
-                        250,                  // explosionHeight
-                        delayMs,              // delayMs
-                        getContext()
+        if (level - 1 < SmallRunBoomList.SmallRunBoomList.length) {
+            for (int[] boomData : SmallRunBoomList.SmallRunBoomList[level - 1]) {
+                SmallRunBoom smallBoom = new SmallRunBoom(
+                        boomData[0],    // x
+                        boomData[1],    // y
+                        boomData[2],    // width
+                        boomData[3],    // height
+                        boomData[4],    // speed Rotate
+                        boomData[5],    // speed run
+                        boomData[6]     // distance
                 );
-                boomScripts.add(boom);
+                smallRunBooms.add(smallBoom);
             }
         }
 
@@ -257,12 +291,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         Bitmap originalBackground = BitmapFactory.decodeResource(getResources(), R.drawable.background);
         background = Bitmap.createScaledBitmap(originalBackground, getWidth(), getHeight(), true);
 
+
         gameThread.setRunning(true);
         gameThread.start();
     }
 
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
+    @Override public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
@@ -283,28 +317,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public void update() {
         if (isGamePaused) return;
 
-        switchCader.updateCader();
-
         long currentTime = System.currentTimeMillis();
 
-        for (BlowingStone stone : blowingStones) {
-            stone.update();
-            if (stone.getY() > getHeight()) {
-                stone.y = -stone.getHeight();
-            }
-            if (stone.checkCollisionWithPlayer(player)) {
-                life.decreaseLife(40);
-                stone.y = -stone.getHeight();
-            }
-        }
+        switchCader.updateCader();
 
         for (BoomScript boom : boomScripts) {
             boom.update();
-
             if (boom.getY() > getHeight()) {
                 boom.y = -boom.getHeight();
             }
-
             if (boom.checkCollisionWithPlayer(player)) {
                 life.decreaseLife(100);
                 boom.y = -boom.getHeight();
@@ -314,7 +335,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             for (int i = bullets.size() - 1; i >= 0; i--) {
                 Bullet bullet = bullets.get(i);
                 if (boom.checkCollisionWithBullet(bullet)) {
-                    Log.d("BoomCollision", "Bullet hit Boom at (" + boom.x + ", " + boom.y + ")");
                     boom.startAnimation();
                     boom.y = bullet.getY() - boom.getHeight();
                     bullets.remove(i);
@@ -331,17 +351,157 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        // Добавляем кулдаун для столкновения с Coolest
+
+        for (int i = smallRunBooms.size() - 1; i >= 0; i--) {
+            SmallRunBoom smallBoom = smallRunBooms.get(i);
+            smallBoom.update(player.getX() + player.getWidth() / 2, player.getY() + player.getHeight() / 2);
+
+            float boomLeft = smallBoom.x - smallBoom.width / 2;
+            float boomRight = smallBoom.x + smallBoom.width / 2;
+            float boomTop = smallBoom.y - smallBoom.height / 2;
+            float boomBottom = smallBoom.y + smallBoom.height / 2;
+
+            if (player.getX() + player.getWidth() > boomLeft &&
+                    player.getX() < boomRight &&
+                    player.getY() + player.getHeight() > boomTop &&
+                    player.getY() < boomBottom)
+            {
+                if (currentTime - lastCollisionTime >= collisionCooldown) {
+                    lastCollisionTime = currentTime;
+                    life.decreaseLife(15);
+                }
+            }
+        }
+
+// Обновление пуль и проверка столкновений
+        for (int i = bullets.size() - 1; i >= 0; i--) {
+            Bullet bullet = bullets.get(i);
+            bullet.update();
+
+            // Пуля вышла за пределы экрана
+            if (bullet.getX() > getWidth() || bullet.getX() < 0) {
+                bullets.remove(i);
+                continue;
+            }
+
+            boolean bulletRemoved = false;
+            for (int j = smallRunBooms.size() - 1; j >= 0; j--) {
+                SmallRunBoom smallBoom = smallRunBooms.get(j);
+                RectF diagonal1Bounds = smallBoom.getDiagonal1Bounds();
+
+                float bulletLeft = bullet.getX();
+                float bulletRight = bullet.getX() + Bullet.width;
+                float bulletTop = bullet.getY();
+                float bulletBottom = bullet.getY() + Bullet.height;
+
+                if (bulletRight > diagonal1Bounds.left && bulletLeft < diagonal1Bounds.right &&
+                        bulletBottom > diagonal1Bounds.top && bulletTop < diagonal1Bounds.bottom) {
+                    bullets.remove(i);
+                    smallRunBooms.remove(j);
+
+                    bulletRemoved = true;
+                    break;
+                }
+            }
+
+            if (bulletRemoved) {
+                continue;
+            }
+
+            for (int j = smallRunBooms.size() - 1; j >= 0; j--) {
+                SmallRunBoom smallBoom = smallRunBooms.get(j);
+                float boomLeft = smallBoom.x - smallBoom.width / 2;
+                float boomRight = smallBoom.x + smallBoom.width / 2;
+                float boomTop = smallBoom.y - smallBoom.height / 2;
+                float boomBottom = smallBoom.y + smallBoom.height / 2;
+
+                float bulletLeft = bullet.getX();
+                float bulletRight = bullet.getX() + Bullet.width;
+                float bulletTop = bullet.getY();
+                float bulletBottom = bullet.getY() + Bullet.height;
+
+                if (bulletRight > boomLeft && bulletLeft < boomRight &&
+                        bulletBottom > boomTop && bulletTop < boomBottom) {
+                    smallRunBooms.remove(j);
+                }
+            }
+
+            Bullet bulletStillAlive = bullets.get(i);
+            for (BadBox badBox : badBoxList) {
+                if (badBox.checkCollisionBullet(bulletStillAlive)) {
+                    bullets.remove(i);
+                    badBox.die();
+                    break;
+                }
+            }
+
+            for (Block block : blockList) {
+                if (bulletStillAlive.getX() < block.getX() + block.getWidth() &&
+                        bulletStillAlive.getX() + Bullet.width > block.getX() &&
+                        bulletStillAlive.getY() < block.getY() + block.getHeight() &&
+                        bulletStillAlive.getY() + Bullet.height > block.getY()) {
+                    bullets.remove(i);
+                    break;
+                }
+            }
+
+            for (Coolest coolest : coolestList) {
+                if (coolest.checkCollisionWithBullet(bulletStillAlive)) {
+                    bullets.remove(i);
+                    break;
+                }
+            }
+        }
+
+        for (BlowingStone stone : blowingStones) {
+            stone.update();
+            if (stone.getY() > getHeight()) {
+                stone.y = -stone.getHeight();
+            }
+            if (stone.checkCollisionWithPlayer(player)) {
+                life.decreaseLife(40);
+                stone.y = -stone.getHeight();
+            }
+        }
+
+        for (BoomScript boom : boomScripts) {
+            boom.update();
+            if (boom.getY() > getHeight()) {
+                boom.y = -boom.getHeight();
+            }
+            if (boom.checkCollisionWithPlayer(player)) {
+                life.decreaseLife(100);
+                boom.y = -boom.getHeight();
+                boom.startAnimation();
+            }
+
+            for (int i = bullets.size() - 1; i >= 0; i--) {
+                Bullet bullet = bullets.get(i);
+                if (boom.checkCollisionWithBullet(bullet)) {
+                    boom.startAnimation();
+                    boom.y = bullet.getY() - boom.getHeight();
+                    bullets.remove(i);
+                    break;
+                }
+            }
+
+            for (Block block : blockList) {
+                if (boom.checkCollisionWithBlock(block)) {
+                    boom.startAnimation();
+                    boom.y = block.getY() - boom.getHeight();
+                    break;
+                }
+            }
+        }
+
         long lastCoolestCollisionTime = 0;
         final long coolestCollisionCooldown = 500; // 0.5 секунды
-
         for (Coolest coolest : coolestList) {
             coolest.update();
             if (coolest.checkCollisionWithPlayer(player)) {
                 if (currentTime - lastCoolestCollisionTime >= coolestCollisionCooldown) {
                     life.decreaseLife(10);
                     lastCoolestCollisionTime = currentTime;
-                    Log.i("Coolest", "Player collided with Coolest and lost 10 life");
                 }
             }
         }
@@ -349,6 +509,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         for (FinishScript finishScript : finishScripts) {
             finishScript.x += 0;
         }
+
         if (currentTime - lastDropTime >= dropInterval) {
             lastDropTime = currentTime;
         }
@@ -360,44 +521,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 break;
             }
         }
-
-        if (isTouchingSpeedGreen) {
-            player.speed = 35f;
-        } else {
-            player.speed = 15f;
-        }
+        player.speed = isTouchingSpeedGreen ? 35f : 15f;
 
         for (BadBox badBox : badBoxList) {
             badBox.update();
-        }
-
-        for (int i = bullets.size() - 1; i >= 0; i--) {
-            Bullet bullet = bullets.get(i);
-            bullet.update();
-            if (bullet.getX() > getWidth() || bullet.getX() < 0) {
-                bullets.remove(i);
-                continue;
-            }
-            for (BadBox badBox : badBoxList) {
-                if (badBox.checkCollisionBullet(bullet)) {
-                    bullets.remove(i);
-                    badBox.die();
-                    break;
-                }
-            }
-            for (Block block : blockList) {
-                if (bullet.getX() < block.getX() + block.getWidth() &&
-                        bullet.getX() + Bullet.width > block.getX() &&
-                        bullet.getY() < block.getY() + block.getHeight() &&
-                        bullet.getY() + Bullet.height > block.getY()) {
-                    bullets.remove(i);
-                    break;
-                }
-            }
-            for (Coolest coolest : coolestList) {
-                if (coolest.checkCollisionWithBullet(bullet)) {
-                    bullets.remove(i);
-                    break;
+            if (badBox.checkCollisionPlayer(player)) {
+                if (currentTime - lastCollisionTime >= collisionCooldown) {
+                    lastCollisionTime = currentTime;
+                    life.decreaseLife(20);
+                    Log.i("info", "Player collided with BadBox and lost life");
                 }
             }
         }
@@ -406,32 +538,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             life.decreaseLife(999_999_999);
         }
 
-        for (BadBox badBox : badBoxList) {
-            if (badBox.checkCollisionPlayer(player)) {
-                if (currentTime - lastCollisionTime >= collisionCooldown) {
-                    lastCollisionTime = currentTime;
-                    life.decreaseLife(20);
-                    Log.i("info", "Player collided with badBox and lost life");
-                }
-            }
-        }
-
-        boolean isOnBlock = false;
-        for (Block block : blockList) {
-            if (player.checkBlockCollision(blockList)) {
-                isOnBlock = true;
-                break;
-            }
+        boolean isOnBlock = player.checkBlockCollision(blockList);
+        if (!isOnBlock) {
+            player.LandRestriction = 500;
         }
 
         if (player.checkFlagCollision(finishScripts)) {
             Log.i("Finishh", "finish");
             player.PlayerFinishAnimation();
             SwitchCader.index = 1;
+            life.resetLife();
             goToMenu();
-        }
-        if (!isOnBlock) {
-            player.LandRestriction = 500;
         }
 
         player.update();
@@ -452,6 +569,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         if (background != null) {
             canvas.drawBitmap(background, 0, 0, null);
+        }
+
+        Log.i("Draw", "Drawing " + smallRunBooms.size() + " SmallRunBooms");
+        for (SmallRunBoom smallBoom : smallRunBooms) {
+            smallBoom.draw(canvas);
         }
 
         for (BlowingStone stone : blowingStones) {
@@ -496,7 +618,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             PauseFunction(canvas);
         }
     }
-
 
     public Player getPlayer() {
         return player;
@@ -794,4 +915,5 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public List<SpeedGreenScript> getSpeedGreenScripts() {return speedGreenScripts;}
+    public List<SmallRunBoom> getSmallRunBooms() {return smallRunBooms;}
 }

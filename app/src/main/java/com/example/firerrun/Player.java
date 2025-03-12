@@ -82,7 +82,6 @@ public class Player {
         animation = new Animation(this);
 
         this.context = context;
-        // Инициализация playerController
         this.playerController = new PlayerController(this, gameView);
     }
 
@@ -100,7 +99,6 @@ public class Player {
             isFacingLeft = false;
         }
 
-        // Проверка столкновений по горизонтали
         boolean canMove = true;
         for (Block block : blocks) {
             if (isCollidingWithBlock(newX, y, block)) {
@@ -130,7 +128,6 @@ public class Player {
             jumpSpeed += gravity;
         }
 
-        // Проверка столкновений по вертикали
         canMove = true;
         for (Block block : blocks) {
             if (isCollidingWithBlock(x, newY, block)) {
@@ -143,7 +140,6 @@ public class Player {
             y = newY;
         }
 
-        // Проверка, находится ли игрок на блоке
         boolean isOnBlock = checkBlockCollision(blocks);
 
         if (!isOnBlock && !jumping) {

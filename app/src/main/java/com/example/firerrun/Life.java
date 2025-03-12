@@ -59,5 +59,5 @@ public class Life {
 
     public void decreaseLife(int amount) {currentLives -= amount;}
 
-    public void resetLife() {currentLives = maxLives;}
+    public void resetLife() {currentLives = 100;}
 }

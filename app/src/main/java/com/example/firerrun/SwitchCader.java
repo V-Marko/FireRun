@@ -77,6 +77,9 @@ public class SwitchCader {
                     finishScript.x += deltaOffset;
                 }
             }
+            for(SmallRunBoom smallRunBoom : gameView.smallRunBooms){
+                smallRunBoom.x += deltaOffset;
+            }
 
             for (Block block : gameView.getBlockList()) {
                 block.x += deltaOffset;
