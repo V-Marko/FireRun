@@ -64,8 +64,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private List<Bullet> bullets = new ArrayList<>();
     private List<BadBox> badBoxList = new ArrayList<>();
     public List<Coolest> coolestList = new ArrayList<>();
-
     public List<BlowingStone> blowingStones = new ArrayList<>();
+    private List<BadBoxBotScript> badBoxBots = new ArrayList<>();
+
+    public List<WallUpDownScript> wallUpDownScripts = new ArrayList<>(); // Добавлено для стен
+    private Paint wallPaint;
+
     private long lastDropTime = 0;
     private final long dropInterval = 2000;
 
@@ -122,6 +126,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         coolestList.clear();
         smallRunBooms.clear();
         speedGreenScripts.clear();
+        badBoxBots.clear();
+        wallUpDownScripts.clear();
+
+        if (level - 1 >= 0 && level - 1 < wallUpDownList.wallUDList.length) {
+            for (int[] wallData : wallUpDownList.wallUDList[level - 1]) {
+                WallUpDownScript wall = new WallUpDownScript(
+                        wallData[0], // x
+                        wallData[1], // y
+                        wallData[2], // width
+                        wallData[3], // height
+                        wallData[4], // speed
+                        wallData[5], // minY
+                        wallData[6]  // maxY
+                );
+                wallUpDownScripts.add(wall);
+            }
+        }
+
+
+
 
         if (level - 1 >= 0 && level - 1 < BoomList.BoomList.length) {
             for (int[] boomData : BoomList.BoomList[level - 1]) {
@@ -138,7 +162,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 boomScripts.add(boom);
             }
         }
-
+        if (level - 1 < BadBoxBotList.BadBoxs.length) {
+            for (int[] botData : BadBoxBotList.BadBoxs[level - 1]) {
+                BadBoxBotScript bot = new BadBoxBotScript(botData[0], botData[1], botData[2], botData[3], botData[4], getContext());
+                bot.setBlocks(blockList);
+                badBoxBots.add(bot);
+            }
+        }
 
         if (level - 1 < SmallRunBoomList.SmallRunBoomList.length) {
             for (int[] boomData : SmallRunBoomList.SmallRunBoomList[level - 1]) {
@@ -244,6 +274,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         isMenuVisible = true;
         isInMenu = true;
 
+
+
         player = new Player(context);
 
         loadLevel(level);
@@ -264,6 +296,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         switchCader = new SwitchCader(player, this, getSpeedGreenScripts());
         Bitmap speedGreenBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.speed_green);
 
+        wallPaint = new Paint();
+        wallPaint.setColor(Color.BLUE);
 
     }
 
@@ -321,6 +355,45 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         switchCader.updateCader();
 
+        for (WallUpDownScript wall : wallUpDownScripts) {
+            wall.update();
+        }
+
+
+        for (int i = badBoxBots.size() - 1; i >= 0; i--) {
+            BadBoxBotScript bot = badBoxBots.get(i);
+            bot.update(player, blockList);
+
+            if (bot.checkCollisionWithPlayer(player)) {
+                if (currentTime - lastCollisionTime >= collisionCooldown) {
+                    lastCollisionTime = currentTime;
+                    life.decreaseLife(20);
+                    Log.i("Collision", "Player hit by BadBoxBot");
+                }
+            }
+        }
+
+
+        // Update bullets and check collision with BadBoxBots
+        for (int i = bullets.size() - 1; i >= 0; i--) {
+            Bullet bullet = bullets.get(i);
+            bullet.update();
+
+            if (bullet.getX() > getWidth() || bullet.getX() < 0) {
+                bullets.remove(i);
+                continue;
+            }
+
+            for (int j = badBoxBots.size() - 1; j >= 0; j--) {
+                BadBoxBotScript bot = badBoxBots.get(j);
+                if (checkCollisionWithBullet(bot, bullet)) {
+                    bullets.remove(i);
+                    badBoxBots.remove(j); // Remove bot on bullet hit
+                    break;
+                }
+            }
+        }
+
         for (BoomScript boom : boomScripts) {
             boom.update();
             if (boom.getY() > getHeight()) {
@@ -373,7 +446,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-// Обновление пуль и проверка столкновений
         for (int i = bullets.size() - 1; i >= 0; i--) {
             Bullet bullet = bullets.get(i);
             bullet.update();
@@ -553,9 +625,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         player.update();
     }
+
+    private boolean checkCollisionWithPlayer(BadBoxBotScript bot) {
+        return player.getX() + player.getWidth() > bot.getX() &&
+                player.getX() < bot.getX() + bot.getWidth() &&
+                player.getY() + player.getHeight() > bot.getY() &&
+                player.getY() < bot.getY() + bot.getHeight();
+    }
+
+    private boolean checkCollisionWithBullet(BadBoxBotScript bot, Bullet bullet) {
+        return bullet.getX() + Bullet.width > bot.getX() &&
+                bullet.getX() < bot.getX() + bot.getWidth() &&
+                bullet.getY() + Bullet.height > bot.getY() &&
+                bullet.getY() < bot.getY() + bot.getHeight();
+    }
+
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
+
+
 
         if (isMenuVisible) {
             MenuLevelsFunction(canvas);
@@ -571,9 +660,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawBitmap(background, 0, 0, null);
         }
 
-        Log.i("Draw", "Drawing " + smallRunBooms.size() + " SmallRunBooms");
+
+        for (WallUpDownScript wall : wallUpDownScripts) {
+            canvas.drawRect(wall.getX(), wall.getY(),
+                    wall.getX() + wall.getWidth(),
+                    wall.getY() + wall.getHeight(),
+                    wallPaint);
+        }
+
         for (SmallRunBoom smallBoom : smallRunBooms) {
             smallBoom.draw(canvas);
+        }
+        for (BadBoxBotScript bot : badBoxBots) {
+            bot.draw(canvas);
         }
 
         for (BlowingStone stone : blowingStones) {
@@ -618,7 +717,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             PauseFunction(canvas);
         }
     }
-
     public Player getPlayer() {
         return player;
     }
@@ -633,6 +731,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     public List<Bullet> getBullets() {
         return bullets;
+    }
+    public List<BadBoxBotScript> getBadBoxBot(){
+        return badBoxBots;
     }
 
     public BadBox getBadBox() {

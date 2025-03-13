@@ -23,6 +23,9 @@ public class BlowingStoneList {
 
                     {4000, 700, 150, 150}
 
+            },
+            {
+                    {1200, 600, 150, 150}
             }
     };
 }

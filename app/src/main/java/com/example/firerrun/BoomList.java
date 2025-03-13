@@ -20,7 +20,8 @@ public class BoomList {
             },
             {//level 6
                     {2000, 100, 150, 200, 1000}
-            }
+            },
+
     };
 
     }

@@ -409,4 +409,5 @@ public class Player {
         isFacingLeft = false;
         bullets.clear();
     }
+
 }

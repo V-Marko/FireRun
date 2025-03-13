@@ -4,6 +4,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 
+import java.util.List;
+
 public class SmallRunBoom {
     public float x;
     public float y;
@@ -14,6 +16,7 @@ public class SmallRunBoom {
     public float speed;
     public Paint paint;
     public float SRBdistance;
+    private List<Block> blocks; // Список блоков для проверки столкновений
 
     public SmallRunBoom(float x, float y, float width, float height, float speedRotate, float speed, float SRBdistance) {
         this.x = x;
@@ -25,8 +28,13 @@ public class SmallRunBoom {
         this.angle = 0;
         this.SRBdistance = SRBdistance;
         paint = new Paint();
-        paint.setColor(0xFFFF0000);
+        paint.setColor(0xFFFF0000); // Красный цвет
         paint.setStyle(Paint.Style.FILL);
+    }
+
+    // Метод для установки списка блоков
+    public void setBlocks(List<Block> blocks) {
+        this.blocks = blocks;
     }
 
     public void update(float playerX, float playerY) {
@@ -47,9 +55,45 @@ public class SmallRunBoom {
             float moveX = (dx / distance) * speed;
             float moveY = (dy / distance) * speed * 2f;
 
-            x += moveX;
-            y += moveY;
+            float newX = x + moveX;
+            float newY = y + moveY;
+
+            if (blocks != null) {
+                for (Block block : blocks) {
+                    if (checkCollisionWithBlock(newX, newY, block)) {
+                        if (newY < y) {
+                            moveY = 0;
+                            newY = y;
+                        }
+
+                        if (moveX > 0 && newX + width > block.getX() && x + width <= block.getX()) {
+                            moveX = 0;
+                            newX = block.getX() - width;
+                        } else if (moveX < 0 && newX < block.getX() + block.getWidth() && x >= block.getX() + block.getWidth()) {
+                            moveX = 0;
+                            newX = block.getX() + block.getWidth();
+                        }
+                    }
+                }
+            }
+
+            x = newX;
+            y = newY;
         }
+    }
+
+    private boolean checkCollisionWithBlock(float newX, float newY, Block block) {
+        float left = newX - width / 2;
+        float right = newX + width / 2;
+        float top = newY - height / 2;
+        float bottom = newY + height / 2;
+
+        float blockLeft = block.getX();
+        float blockRight = block.getX() + block.getWidth();
+        float blockTop = block.getY();
+        float blockBottom = block.getY() + block.getHeight();
+
+        return right > blockLeft && left < blockRight && bottom > blockTop && top < blockBottom;
     }
 
     public void draw(Canvas canvas) {

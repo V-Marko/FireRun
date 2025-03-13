@@ -31,12 +31,20 @@ public class Life {
     }
 
     public void draw(Canvas canvas) {
-        canvas.drawText("Lives: " + currentLives, 50, 50, textPaint);
+        if(currentLives<=100){
+            canvas.drawText("Lives: " + currentLives, 50, 50, textPaint);
 
-        if (currentLives <= 0) {
-            currentLives = 0;
-            playerLose(canvas);
+            if (currentLives <= 0) {
+                currentLives = 0;
+                playerLose(canvas);
+            }
         }
+        else{
+            currentLives = 100;
+            canvas.drawText("Lives: " + currentLives, 50, 50, textPaint);
+
+        }
+
     }
 
     public void playerLose(Canvas canvas) {

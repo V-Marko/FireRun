@@ -100,11 +100,18 @@ public class SwitchCader {
             for (Bullet bullet : gameView.getBullets()) {
                 bullet.x += deltaOffset;
             }
+
+            for(BadBoxBotScript bbs : gameView.getBadBoxBot()){
+                bbs.x += deltaOffset;
+            }
             for (BoomScript boom : gameView.boomScripts) {
                 boom.x += deltaOffset;
             }
             for (Coolest coolest : gameView.coolestList) {
                 coolest.x += deltaOffset;
+            }
+            for (WallUpDownScript wall : gameView.wallUpDownScripts){
+                wall.x+=deltaOffset;
 
             }
 
