@@ -17,6 +17,12 @@ public class CoolestList {
             {//level 5
                 //   x     y   w    h   SR
                     {700, 300, 600, 10, -2}
+            },
+            {},
+            {},
+            {//level 8
+                    {3000, 300, 600, 10, -2},  // x, y, width, height, rotationSpeed
+
             }
     };
 

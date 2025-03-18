@@ -5,17 +5,16 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.os.Handler;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import android.graphics.Paint;
-import android.graphics.Color;
-import android.view.View;
-import android.widget.Button;
 
 public class Player {
     private GameView gameView;
@@ -27,7 +26,6 @@ public class Player {
     public static float x;
     public static float y;
     public float speed;
-
 
     private boolean movingLeft, movingRight, jumping;
     private boolean isIdle;
@@ -45,8 +43,8 @@ public class Player {
     public int gunWidth = 150;
     public int gunHeight = 90;
 
-    //    private static final long ANIMATION_DELAY = 300;
     private List<Block> blocks;
+    private List<BlockMoveScript> blockMoveScripts; // Добавляем список движущихся блоков
     public float LandRestriction = 500;
     public static List<Bullet> bullets;
 
@@ -54,11 +52,10 @@ public class Player {
 
     private float initialJumpSpeed = -9.5f;
     private float gravity = 0.38f;
-    private float maxJumpHeight = 4.75f;//max Jump height
+    private float maxJumpHeight = 4.75f; // max Jump height
 
     private float currentJumpHeight = 0f;
     private Animation animation;
-
 
     public Player(Context context) {
         this.context = context;
@@ -78,6 +75,7 @@ public class Player {
         bullets = new ArrayList<>();
         isIdle = true;
         blocks = new ArrayList<>();
+        blockMoveScripts = new ArrayList<>(); // Инициализируем список движущихся блоков
 
         animation = new Animation(this);
 
@@ -140,13 +138,12 @@ public class Player {
             y = newY;
         }
 
-        boolean isOnBlock = checkBlockCollision(blocks);
+        boolean isOnBlock = checkBlockCollision(blocks, blockMoveScripts);
 
         if (!isOnBlock && !jumping) {
             y += jumpSpeed;
             jumpSpeed += gravity;
         }
-
 
         Log.i("X", "x = " + getX());
     }
@@ -166,6 +163,20 @@ public class Player {
                 playerBottom > blockTop && playerTop < blockBottom;
     }
 
+    private boolean isCollidingWithBlockMove(float newX, float newY, BlockMoveScript blockMove) {
+        float playerLeft = newX;
+        float playerRight = newX + width;
+        float playerTop = newY;
+        float playerBottom = newY + height;
+
+        float blockLeft = blockMove.getX();
+        float blockRight = blockMove.getX() + blockMove.getWidth();
+        float blockTop = blockMove.getY();
+        float blockBottom = blockMove.getY() + blockMove.getHeight();
+
+        return playerRight > blockLeft && playerLeft < blockRight &&
+                playerBottom > blockTop && playerTop < blockBottom;
+    }
 
     public void jump() {
         if (isOnGround() && !jumping) {
@@ -177,15 +188,16 @@ public class Player {
 
     public boolean isOnGround() {
         boolean groundCondition = (y >= LandRestriction);
-        boolean blockCondition = checkBlockCollision(blocks);
+        boolean blockCondition = checkBlockCollision(blocks, blockMoveScripts);
 
         return groundCondition || blockCondition;
     }
 
-    public boolean checkBlockCollision(List<Block> blocks) {
+    public boolean checkBlockCollision(List<Block> blocks, List<BlockMoveScript> blockMoveScripts) {
         boolean isColliding = false;
         LandRestriction = Player.y - Player.height;
 
+        // Проверка столкновений с обычными блоками
         for (Block block : blocks) {
             if (Math.abs(block.getX() - x) < 200 && Math.abs(block.getY() - y) < 200) {
                 boolean xOverlap = (x < block.getX() + block.getWidth()) &&
@@ -201,6 +213,29 @@ public class Player {
                         y = block.getY() - height;
                         LandRestriction = (int) block.getY();
                         jumpSpeed = 0;
+                    }
+                }
+            }
+        }
+
+        // Проверка столкновений с движущимися блоками
+        for (BlockMoveScript blockMove : blockMoveScripts) {
+            if (Math.abs(blockMove.getX() - x) < 200 && Math.abs(blockMove.getY() - y) < 200) {
+                boolean xOverlap = (x < blockMove.getX() + blockMove.getWidth()) &&
+                        (x + width > blockMove.getX());
+
+                boolean yOverlap = (y + height >= blockMove.getY()) &&
+                        (y + height <= blockMove.getY() + blockMove.getHeight());
+
+                if (xOverlap && yOverlap) {
+                    isColliding = true;
+
+                    if (y + height <= blockMove.getY() + blockMove.getHeight() && jumpSpeed >= 0) {
+                        y = blockMove.getY() - height;
+                        LandRestriction = (int) blockMove.getY();
+                        jumpSpeed = 0;
+                        // Дополнительно двигаем игрока вместе с блоком
+                        x += blockMove.speed * (blockMove.movingRight ? 1 : -1);
                     }
                 }
             }
@@ -223,7 +258,6 @@ public class Player {
         }
         return false;
     }
-
 
     public void draw(Canvas canvas) {
         Bitmap currentBodyImage = bodyImage;
@@ -272,7 +306,6 @@ public class Player {
 
         canvas.drawRect(rightRectLeft, rightRectTop, rightRectRight, rightRectBottom, redPaint);
 
-
         for (Block block : blocks) {
             if (isColliding(rightRectLeft, rightRectTop, rightRectRight, rightRectBottom, block)) {
                 TouchRedBlockTOplayerLEFT = true;
@@ -294,8 +327,6 @@ public class Player {
         if (!TouchRedBlockTOplayerLEFT && !TouchRedBlockTOplayerRIGHT) {
             speed = 15;
         }
-
-
     }
 
     private boolean isColliding(float rectLeft, float rectTop, float rectRight, float rectBottom, Block block) {
@@ -307,7 +338,6 @@ public class Player {
         return rectRight > blockLeft && rectLeft < blockRight &&
                 rectBottom > blockTop && rectTop < blockBottom;
     }
-
 
     public void setMovingLeft(boolean movingLeft) {
         this.movingLeft = movingLeft;
@@ -329,6 +359,10 @@ public class Player {
 
     public void setBlocks(List<Block> blockList) {
         this.blocks = blockList;
+    }
+
+    public void setBlockMoveScripts(List<BlockMoveScript> blockMoveScripts) {
+        this.blockMoveScripts = blockMoveScripts;
     }
 
     public float getX() {
@@ -357,14 +391,13 @@ public class Player {
         this.gunImage = Bitmap.createScaledBitmap(gunImage, gunWidth, gunHeight, false);
     }
 
-
     public void setX(float newX) {
         x = newX;
     }
+
     public void setY(int newY) {
         y = newY;
     }
-
 
     public int getVelocityX() {
         if (movingLeft) {
@@ -375,8 +408,6 @@ public class Player {
             return 0;
         }
     }
-
-
 
     public void PlayerFinishAnimation() {
         ((Activity) context).runOnUiThread(new Runnable() {
@@ -391,11 +422,9 @@ public class Player {
                 btnRight.setVisibility(View.GONE);
                 btnJump.setVisibility(View.GONE);
                 btnShoot.setVisibility(View.GONE);
-
             }
         });
     }
-
 
     public void resetPosition() {
         x = 100;
@@ -409,5 +438,4 @@ public class Player {
         isFacingLeft = false;
         bullets.clear();
     }
-
 }

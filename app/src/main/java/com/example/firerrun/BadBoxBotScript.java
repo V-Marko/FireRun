@@ -40,29 +40,24 @@ public class BadBoxBotScript {
         float playerX = player.getX();
         float playerY = player.getY();
 
-        // Вычисляем расстояние до игрока
         float dx = playerX - x;
         float dy = playerY - y;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
-        // Движение к игроку только в пределах дистанции агрессии
         if (distance > 0 && distance <= aggroDistance) {
             float moveX = (dx / distance) * speed;
             float newX = x + moveX;
 
-            // Проверяем столкновение с блоками перед перемещением
             if (!checkBlockCollisionHorizontal(newX)) {
                 x = newX;
             }
         }
 
-        // Гравитация
         if (!isOnGround()) {
             jumpSpeed += gravity;
             y += jumpSpeed;
         }
 
-        // Проверка столкновений с землёй или блоками
         boolean isOnBlock = checkBlockCollisionVertical();
 
         if (!isOnBlock && y >= landRestriction) {
@@ -76,7 +71,6 @@ public class BadBoxBotScript {
         return y >= landRestriction || checkBlockCollisionVertical();
     }
 
-    // Проверка горизонтальных столкновений (чтобы не забираться на блоки)
     private boolean checkBlockCollisionHorizontal(float newX) {
         if (blocks == null) return false;
 
@@ -87,10 +81,9 @@ public class BadBoxBotScript {
                     (y < block.getY() + block.getHeight());
 
             if (xOverlap && yOverlap) {
-                // Если бот сталкивается с блоком сбоку, останавливаем его
-                if (newX < x) { // Движение влево
+                if (newX < x) {
                     x = block.getX() + block.getWidth();
-                } else { // Движение вправо
+                } else {
                     x = block.getX() - width;
                 }
                 return true;
@@ -99,7 +92,6 @@ public class BadBoxBotScript {
         return false;
     }
 
-    // Проверка вертикальных столкновений (только для падения на землю)
     private boolean checkBlockCollisionVertical() {
         if (blocks == null) return false;
 
@@ -110,7 +102,6 @@ public class BadBoxBotScript {
                     (y + height <= block.getY() + block.getHeight());
 
             if (xOverlap && yOverlap && jumpSpeed >= 0) {
-                // Если бот падает на блок сверху, останавливаем его
                 y = block.getY() - height;
                 jumpSpeed = 0;
                 isOnGround = true;

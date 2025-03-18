@@ -112,7 +112,11 @@ public class SwitchCader {
             }
             for (WallUpDownScript wall : gameView.wallUpDownScripts){
                 wall.x+=deltaOffset;
-
+            }
+            for(BlockMoveScript bms : gameView.blockMoveScripts){
+                bms.x+=deltaOffset;
+                bms.position1X+=deltaOffset;
+                bms.position2X+=deltaOffset;
             }
 
             player.setX(player.getX() + deltaOffset);

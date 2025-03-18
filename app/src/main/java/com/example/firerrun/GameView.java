@@ -67,8 +67,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public List<BlowingStone> blowingStones = new ArrayList<>();
     private List<BadBoxBotScript> badBoxBots = new ArrayList<>();
 
-    public List<WallUpDownScript> wallUpDownScripts = new ArrayList<>(); // Добавлено для стен
-    private Paint wallPaint;
+
+    public List<WallUpDownScript> wallUpDownScripts = new ArrayList<>();
+    private Bitmap wallImage;
+    public List<BlockMoveScript> blockMoveScripts = new ArrayList<>(); // Список движущихся блоков
+    private Bitmap blockImage;
 
     private long lastDropTime = 0;
     private final long dropInterval = 2000;
@@ -128,6 +131,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         speedGreenScripts.clear();
         badBoxBots.clear();
         wallUpDownScripts.clear();
+        blockMoveScripts.clear();
+
+        if (level - 1 >= 0 && level - 1 < BlockMoveList.BlockMove.length) {
+            for (int[] blockData : BlockMoveList.BlockMove[level - 1]) {
+                BlockMoveScript blockMove = new BlockMoveScript(
+                        blockData[0], blockData[1], blockData[2], blockData[3], blockData[4], // Блок 2
+                        blockData[5], blockData[6], blockData[7], blockData[8],              // Блок 1
+                        blockData[9], blockData[10], blockData[11], blockData[12],           // Блок 3
+                        blockImage
+                );
+                blockMoveScripts.add(blockMove);
+            }
+        }
+
 
         if (level - 1 >= 0 && level - 1 < wallUpDownList.wallUDList.length) {
             for (int[] wallData : wallUpDownList.wallUDList[level - 1]) {
@@ -296,9 +313,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         switchCader = new SwitchCader(player, this, getSpeedGreenScripts());
         Bitmap speedGreenBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.speed_green);
 
-        wallPaint = new Paint();
-        wallPaint.setColor(Color.BLUE);
+        wallImage = BitmapFactory.decodeResource(getResources(), R.drawable.wall);
 
+        blockImage = BitmapFactory.decodeResource(getResources(), R.drawable.block); 
     }
 
     public static int getScreenWidth(Context context) {
@@ -346,6 +363,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
         }
+        if (wallImage != null && !wallImage.isRecycled()) {
+            wallImage.recycle();
+            wallImage = null;
+        }
     }
 
     public void update() {
@@ -358,7 +379,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         for (WallUpDownScript wall : wallUpDownScripts) {
             wall.update();
         }
+        for (BlockMoveScript blockMove : blockMoveScripts) {
+            blockMove.update();
+        }
 
+        for (WallUpDownScript wall : wallUpDownScripts) {
+            if (checkCollisionWithWall(wall, player)) {
+                if (currentTime - lastCollisionTime >= collisionCooldown) {
+                    lastCollisionTime = currentTime;
+                     life.decreaseLife(30);
+                }
+            }
+        }
 
         for (int i = badBoxBots.size() - 1; i >= 0; i--) {
             BadBoxBotScript bot = badBoxBots.get(i);
@@ -374,7 +406,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
 
-        // Update bullets and check collision with BadBoxBots
         for (int i = bullets.size() - 1; i >= 0; i--) {
             Bullet bullet = bullets.get(i);
             bullet.update();
@@ -388,7 +419,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 BadBoxBotScript bot = badBoxBots.get(j);
                 if (checkCollisionWithBullet(bot, bullet)) {
                     bullets.remove(i);
-                    badBoxBots.remove(j); // Remove bot on bullet hit
+                    badBoxBots.remove(j);
                     break;
                 }
             }
@@ -610,13 +641,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             life.decreaseLife(999_999_999);
         }
 
-        boolean isOnBlock = player.checkBlockCollision(blockList);
+        boolean isOnBlock = player.checkBlockCollision(blockList, blockMoveScripts);
         if (!isOnBlock) {
             player.LandRestriction = 500;
         }
 
         if (player.checkFlagCollision(finishScripts)) {
-            Log.i("Finishh", "finish");
             player.PlayerFinishAnimation();
             SwitchCader.index = 1;
             life.resetLife();
@@ -624,6 +654,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         player.update();
+    }
+
+    private boolean checkCollisionWithWall(WallUpDownScript wall, Player player) {
+        return player.getX() + player.getWidth() > wall.getX() &&
+                player.getX() < wall.getX() + wall.getWidth() &&
+                player.getY() + player.getHeight() > wall.getY() &&
+                player.getY() < wall.getY() + wall.getHeight();
     }
 
     private boolean checkCollisionWithPlayer(BadBoxBotScript bot) {
@@ -644,15 +681,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public void draw(Canvas canvas) {
         super.draw(canvas);
 
-
-
         if (isMenuVisible) {
             MenuLevelsFunction(canvas);
             return;
         }
 
         if (isLoad) {
-            LoadFunction(canvas, 20);
+            LoadFunction(canvas);
             return;
         }
 
@@ -661,11 +696,39 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
 
+        for (BlockMoveScript blockMove : blockMoveScripts) {
+            blockMove.draw(canvas);
+        }
+
         for (WallUpDownScript wall : wallUpDownScripts) {
-            canvas.drawRect(wall.getX(), wall.getY(),
-                    wall.getX() + wall.getWidth(),
-                    wall.getY() + wall.getHeight(),
-                    wallPaint);
+            float wallX = wall.getX();
+            float wallY = wall.getY();
+            float wallWidth = wall.getWidth();
+            float wallHeight = wall.getHeight();
+            float imageWidth = wallImage.getWidth();
+            float imageHeight = wallImage.getHeight();
+
+            float currentX = wallX;
+            while (currentX < wallX + wallWidth) {
+                float tileWidth = Math.min(imageWidth, wallX + wallWidth - currentX);
+
+                float currentY = wallY;
+                while (currentY < wallY + wallHeight) {
+                    float tileHeight = Math.min(imageHeight, wallY + wallHeight - currentY);
+
+                    RectF tileRect = new RectF(
+                            currentX,
+                            currentY,
+                            currentX + tileWidth,
+                            currentY + tileHeight
+                    );
+                    canvas.drawBitmap(wallImage, null, tileRect, null);
+
+                    currentY += imageHeight;
+                }
+
+                currentX += imageWidth;
+            }
         }
 
         for (SmallRunBoom smallBoom : smallRunBooms) {
@@ -891,7 +954,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         loadingHandler.removeCallbacks(loadingRunnable);
     }
 
-    public void LoadFunction(Canvas canvas, int time) {
+    public void LoadFunction(Canvas canvas) {
         Paint backgroundPaint = new Paint();
         backgroundPaint.setColor(Color.BLACK);
         canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);

@@ -40,6 +40,14 @@ public class BadBoxList {
             },
             {//level 5
 
+            },
+            {//level 6
+                    {1500, 450, 150, 150, 1}
+            },
+            {},
+            {
+                    {700, 500, 150, 150, 1},   // x, y, width, height, type
+                    {4700, 450, 150, 150, 1}    // x, y, width, height, type
             }
 
 

@@ -17,9 +17,9 @@ public class BoomScript {
     private Bitmap animationBitmap;
     private boolean isAnimating = false;
     private long animationStartTime;
-    private final long animationDuration = 500; // Increased for visibility
-    private long delayMs; // Delay before falling
-    private long startTime; // Time when the boom was created
+    private final long animationDuration = 500;
+    private long delayMs;
+    private long startTime;
     private boolean hasStartedFalling = false;
 
     public BoomScript(float x, float y, float width, float height, float explosionWidth, float explosionHeight, long delayMs, Context context) {
@@ -30,7 +30,7 @@ public class BoomScript {
         this.explosionWidth = explosionWidth;
         this.explosionHeight = explosionHeight;
         this.delayMs = delayMs;
-        this.startTime = System.currentTimeMillis(); // Record creation time
+        this.startTime = System.currentTimeMillis();
         this.bitmap = Bitmap.createScaledBitmap(
                 BitmapFactory.decodeResource(context.getResources(), R.drawable.boom),
                 (int) width, (int) height, false
@@ -45,7 +45,7 @@ public class BoomScript {
         if (isAnimating) {
             if (System.currentTimeMillis() - animationStartTime >= animationDuration) {
                 isAnimating = false;
-                y = -height; // Reset position after animation
+                y = -height;
             }
         } else if (!hasStartedFalling) {
             // Check if delay has passed
@@ -53,7 +53,7 @@ public class BoomScript {
                 hasStartedFalling = true;
             }
         } else {
-            y += speed; // Start falling after delay
+            y += speed;
         }
     }
 
