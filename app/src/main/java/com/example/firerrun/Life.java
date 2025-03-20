@@ -18,12 +18,11 @@ public class Life {
     private Context context;
     private Handler handler;
 
-    // Поля для полосы здоровья
-    private static final int HEALTH_BAR_WIDTH = 300; // Ширина полосы здоровья
-    private static final int HEALTH_BAR_HEIGHT = 20; // Высота полосы здоровья
-    private static final int HEALTH_BAR_OFFSET_Y = 10; // Отступ полосы под текстом
-    private Paint healthBarBackgroundPaint; // Краска для фона полосы
-    private Paint healthBarFillPaint; // Краска для заполненной части полосы (красная)
+    private static final int HEALTH_BAR_WIDTH = 300;
+    private static final int HEALTH_BAR_HEIGHT = 20;
+    private static final int HEALTH_BAR_OFFSET_Y = 10;
+    private Paint healthBarBackgroundPaint;
+    private Paint healthBarFillPaint;
 
     private int textX = 360;
 

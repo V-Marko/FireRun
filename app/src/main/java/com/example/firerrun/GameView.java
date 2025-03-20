@@ -405,7 +405,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        // Обновляем пули игрока и проверяем столкновения с турелями
         for (int i = bullets.size() - 1; i >= 0; i--) {
             Bullet bullet = bullets.get(i);
             bullet.update();
@@ -416,15 +415,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
 
             boolean bulletRemoved = false;
-            // Проверяем столкновение пули с турелями
             for (int j = turrets.size() - 1; j >= 0; j--) {
                 TurentScript turret = turrets.get(j);
                 if (turret.checkCollisionBullet(bullet)) {
-                    turret.takeDamage(1); // Уменьшаем жизни турели на 1
-                    bullets.remove(i); // Удаляем пулю
+                    turret.takeDamage(1);
+                    bullets.remove(i);
                     bulletRemoved = true;
                     if (!turret.isAlive()) {
-                        turrets.remove(j); // Удаляем турель, если её жизни закончились
+                        turrets.remove(j);
                     }
                     break;
                 }
@@ -1130,7 +1128,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         isGamePaused = false;
         isLoad = false;
         bullets.clear();
-        turretBullets.clear(); // Очищаем пули турелей
+        turretBullets.clear();
         player.resetPosition();
         life.resetLife();
         resumeGame();
