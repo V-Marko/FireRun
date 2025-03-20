@@ -23,6 +23,13 @@ public class BlockMoveList {
                 4000, 700, 100, 100, // position1X, position1Y, width1, height1,
                 4500, 700, 100, 100}, // position2X, position2Y, width2, height2
 
+            },
+            {
+                    //x,    y,   w,   h,  s,  p1X, p1Y,  w1,  h1, p2X,  p2Y,  w2,  h2
+
+                    {1100, 700, 100, 100, 5, 1500, 700, 100, 100, 2300, 700, 100, 100},
+
+                    {2300, 600, 100, 100, 5, 2300, 600, 100, 100, 3000, 600, 100, 100},
             }
     };
 }

@@ -23,6 +23,9 @@ public class CoolestList {
             {//level 8
                     {3000, 300, 600, 10, -2},  // x, y, width, height, rotationSpeed
 
+            },
+            {//level 9
+                    {3800, 400, 600, 10, -1}
             }
     };
 

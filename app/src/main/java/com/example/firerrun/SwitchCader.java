@@ -118,6 +118,9 @@ public class SwitchCader {
                 bms.position1X+=deltaOffset;
                 bms.position2X+=deltaOffset;
             }
+            for(ilusoryblocks ib : gameView.illusoryBlocks){
+                ib.x+=deltaOffset;
+            }
 
             player.setX(player.getX() + deltaOffset);
 

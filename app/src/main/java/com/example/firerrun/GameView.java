@@ -66,7 +66,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public List<Coolest> coolestList = new ArrayList<>();
     public List<BlowingStone> blowingStones = new ArrayList<>();
     private List<BadBoxBotScript> badBoxBots = new ArrayList<>();
-
+    List<ilusoryblocks> illusoryBlocks = new ArrayList<>();
 
     public List<WallUpDownScript> wallUpDownScripts = new ArrayList<>();
     private Bitmap wallImage;
@@ -132,6 +132,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         badBoxBots.clear();
         wallUpDownScripts.clear();
         blockMoveScripts.clear();
+        illusoryBlocks.clear();
 
         if (level - 1 >= 0 && level - 1 < BlockMoveList.BlockMove.length) {
             for (int[] blockData : BlockMoveList.BlockMove[level - 1]) {
@@ -199,6 +200,32 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         boomData[6]     // distance
                 );
                 smallRunBooms.add(smallBoom);
+            }
+        }
+
+        if (level - 1 >= 0 && level - 1 < ilusoryblocksList.ilusoryblocks.length) {
+            for (int[] illusoryData : ilusoryblocksList.ilusoryblocks[level - 1]) {
+                Bitmap illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.block);
+                switch (illusoryData[4]) { // id
+                    case 0: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.block); break;
+                    case 1: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.block2); break;
+                    case 2: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.oak_tree); break;
+                    case 3: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.oak2); break;
+                    case 4: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.barrel); break;
+                }
+
+                // Масштабируем битмап до нужного размера (например, illusoryData[2] и illusoryData[3])
+                illusoryBitmap = Bitmap.createScaledBitmap(illusoryBitmap, illusoryData[2], illusoryData[3], false);
+
+                ilusoryblocks illusoryBlock = new ilusoryblocks(
+                        illusoryData[0],  // x
+                        illusoryData[1],  // y
+                        illusoryData[2],  // ширина
+                        illusoryData[3],  // высота
+                        illusoryBitmap,
+                        getContext()
+                );
+                illusoryBlocks.add(illusoryBlock);
             }
         }
 
@@ -695,7 +722,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawBitmap(background, 0, 0, null);
         }
 
-
         for (BlockMoveScript blockMove : blockMoveScripts) {
             blockMove.draw(canvas);
         }
@@ -729,6 +755,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
                 currentX += imageWidth;
             }
+        }
+
+        // NEW: Draw illusory blocks here
+        for (ilusoryblocks illusory : illusoryBlocks) {
+            illusory.draw(canvas);
         }
 
         for (SmallRunBoom smallBoom : smallRunBooms) {
