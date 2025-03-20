@@ -1,7 +1,5 @@
 package com.example.firerrun;
 
-import static kotlin.text.Typography.bullet;
-
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -23,10 +21,9 @@ import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.WindowManager;
 
-import androidx.collection.ArrayMap;
-
 import java.util.ArrayList;
 import java.util.List;
+
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean isInMenu = true;
     public int level = 1;
@@ -42,7 +39,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Coolest coolest;
 
     private List<SpeedGreenScript> speedGreenScripts = new ArrayList<>();
-
 
     private long lastCollisionTime = 0;
     private final long collisionCooldown = 300;
@@ -70,13 +66,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     public List<WallUpDownScript> wallUpDownScripts = new ArrayList<>();
     private Bitmap wallImage;
-    public List<BlockMoveScript> blockMoveScripts = new ArrayList<>(); // Список движущихся блоков
+    public List<BlockMoveScript> blockMoveScripts = new ArrayList<>();
     private Bitmap blockImage;
 
     private long lastDropTime = 0;
     private final long dropInterval = 2000;
 
-    private int loadingDotsCount = 0; // "Loading..." int
+    private int loadingDotsCount = 0;
     private final Handler loadingHandler = new Handler(Looper.getMainLooper());
     private final Runnable loadingRunnable = new Runnable() {
         @Override
@@ -88,6 +84,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     };
     public List<BoomScript> boomScripts = new ArrayList<>();
     public List<SmallRunBoom> smallRunBooms = new ArrayList<>();
+
+    List<TurentScript> turrets = new ArrayList<>();
+
+    public List<TurretBullet> turretBullets = new ArrayList<>();
+
     public boolean isGamePaused() {
         return isGamePaused;
     }
@@ -133,53 +134,41 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         wallUpDownScripts.clear();
         blockMoveScripts.clear();
         illusoryBlocks.clear();
+        turrets.clear();
+        turretBullets.clear();
 
         if (level - 1 >= 0 && level - 1 < BlockMoveList.BlockMove.length) {
             for (int[] blockData : BlockMoveList.BlockMove[level - 1]) {
                 BlockMoveScript blockMove = new BlockMoveScript(
-                        blockData[0], blockData[1], blockData[2], blockData[3], blockData[4], // Блок 2
-                        blockData[5], blockData[6], blockData[7], blockData[8],              // Блок 1
-                        blockData[9], blockData[10], blockData[11], blockData[12],           // Блок 3
+                        blockData[0], blockData[1], blockData[2], blockData[3], blockData[4],
+                        blockData[5], blockData[6], blockData[7], blockData[8],
+                        blockData[9], blockData[10], blockData[11], blockData[12],
                         blockImage
                 );
                 blockMoveScripts.add(blockMove);
             }
         }
 
-
         if (level - 1 >= 0 && level - 1 < wallUpDownList.wallUDList.length) {
             for (int[] wallData : wallUpDownList.wallUDList[level - 1]) {
                 WallUpDownScript wall = new WallUpDownScript(
-                        wallData[0], // x
-                        wallData[1], // y
-                        wallData[2], // width
-                        wallData[3], // height
-                        wallData[4], // speed
-                        wallData[5], // minY
-                        wallData[6]  // maxY
+                        wallData[0], wallData[1], wallData[2], wallData[3],
+                        wallData[4], wallData[5], wallData[6]
                 );
                 wallUpDownScripts.add(wall);
             }
         }
 
-
-
-
         if (level - 1 >= 0 && level - 1 < BoomList.BoomList.length) {
             for (int[] boomData : BoomList.BoomList[level - 1]) {
                 BoomScript boom = new BoomScript(
-                        boomData[0],           // x
-                        boomData[1],           // y
-                        boomData[2],           // width
-                        boomData[3],           // height
-                        boomData[2] * 1.5f,   // explosionWidth (example scaling)
-                        boomData[3] * 1.5f,   // explosionHeight (example scaling)
-                        boomData[4],           // delayMs
-                        getContext()           // Context
+                        boomData[0], boomData[1], boomData[2], boomData[3],
+                        boomData[2] * 1.5f, boomData[3] * 1.5f, boomData[4], getContext()
                 );
                 boomScripts.add(boom);
             }
         }
+
         if (level - 1 < BadBoxBotList.BadBoxs.length) {
             for (int[] botData : BadBoxBotList.BadBoxs[level - 1]) {
                 BadBoxBotScript bot = new BadBoxBotScript(botData[0], botData[1], botData[2], botData[3], botData[4], getContext());
@@ -191,13 +180,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (level - 1 < SmallRunBoomList.SmallRunBoomList.length) {
             for (int[] boomData : SmallRunBoomList.SmallRunBoomList[level - 1]) {
                 SmallRunBoom smallBoom = new SmallRunBoom(
-                        boomData[0],    // x
-                        boomData[1],    // y
-                        boomData[2],    // width
-                        boomData[3],    // height
-                        boomData[4],    // speed Rotate
-                        boomData[5],     // speed run
-                        boomData[6]     // distance
+                        boomData[0], boomData[1], boomData[2], boomData[3],
+                        boomData[4], boomData[5], boomData[6]
                 );
                 smallRunBooms.add(smallBoom);
             }
@@ -206,24 +190,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (level - 1 >= 0 && level - 1 < ilusoryblocksList.ilusoryblocks.length) {
             for (int[] illusoryData : ilusoryblocksList.ilusoryblocks[level - 1]) {
                 Bitmap illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.block);
-                switch (illusoryData[4]) { // id
+                switch (illusoryData[4]) {
                     case 0: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.block); break;
                     case 1: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.block2); break;
                     case 2: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.oak_tree); break;
                     case 3: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.oak2); break;
                     case 4: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.barrel); break;
                 }
-
-                // Масштабируем битмап до нужного размера (например, illusoryData[2] и illusoryData[3])
                 illusoryBitmap = Bitmap.createScaledBitmap(illusoryBitmap, illusoryData[2], illusoryData[3], false);
-
                 ilusoryblocks illusoryBlock = new ilusoryblocks(
-                        illusoryData[0],  // x
-                        illusoryData[1],  // y
-                        illusoryData[2],  // ширина
-                        illusoryData[3],  // высота
-                        illusoryBitmap,
-                        getContext()
+                        illusoryData[0], illusoryData[1], illusoryData[2], illusoryData[3],
+                        illusoryBitmap, getContext()
                 );
                 illusoryBlocks.add(illusoryBlock);
             }
@@ -281,29 +258,28 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (level - 1 < SmallRunBoomList.SmallRunBoomList.length) {
             for (int[] boomData : SmallRunBoomList.SmallRunBoomList[level - 1]) {
                 SmallRunBoom smallBoom = new SmallRunBoom(
-                        boomData[0],    // x
-                        boomData[1],    // y
-                        boomData[2],    // width
-                        boomData[3],    // height
-                        boomData[4],    // speed Rotate
-                        boomData[5],    // speed run
-                        boomData[6]     // distance
+                        boomData[0], boomData[1], boomData[2], boomData[3],
+                        boomData[4], boomData[5], boomData[6]
                 );
                 smallRunBooms.add(smallBoom);
             }
         }
 
-        // Добавляем загрузку Coolest
         if (level - 1 >= 0 && level - 1 < CoolestList.CoolestList.length) {
             for (int[] coolestData : CoolestList.CoolestList[level - 1]) {
                 Coolest coolest = new Coolest(
-                        coolestData[0],       // x
-                        coolestData[1],       // y
-                        coolestData[2],       // width
-                        coolestData[3],       // height
-                        coolestData[4]        // rotationSpeed
+                        coolestData[0], coolestData[1], coolestData[2], coolestData[3], coolestData[4]
                 );
                 coolestList.add(coolest);
+            }
+        }
+
+        if (level - 1 >= 0 && level - 1 < TurretList.Turrets.length) {
+            for (int[] turretData : TurretList.Turrets[level - 1]) {
+                TurentScript turret = new TurentScript(
+                        turretData[0], turretData[1], turretData[2], turretData[3], turretData[4], turretData[5], turretData[6], 3, this
+                );
+                turrets.add(turret);
             }
         }
 
@@ -317,8 +293,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         isMenuVisible = true;
         isInMenu = true;
-
-
 
         player = new Player(context);
 
@@ -341,8 +315,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         Bitmap speedGreenBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.speed_green);
 
         wallImage = BitmapFactory.decodeResource(getResources(), R.drawable.wall);
-
-        blockImage = BitmapFactory.decodeResource(getResources(), R.drawable.block); 
+        blockImage = BitmapFactory.decodeResource(getResources(), R.drawable.block);
     }
 
     public static int getScreenWidth(Context context) {
@@ -369,12 +342,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         Bitmap originalBackground = BitmapFactory.decodeResource(getResources(), R.drawable.background);
         background = Bitmap.createScaledBitmap(originalBackground, getWidth(), getHeight(), true);
 
-
         gameThread.setRunning(true);
         gameThread.start();
     }
 
-    @Override public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
@@ -414,7 +387,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             if (checkCollisionWithWall(wall, player)) {
                 if (currentTime - lastCollisionTime >= collisionCooldown) {
                     lastCollisionTime = currentTime;
-                     life.decreaseLife(30);
+                    life.decreaseLife(30);
                 }
             }
         }
@@ -432,13 +405,32 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-
+        // Обновляем пули игрока и проверяем столкновения с турелями
         for (int i = bullets.size() - 1; i >= 0; i--) {
             Bullet bullet = bullets.get(i);
             bullet.update();
 
             if (bullet.getX() > getWidth() || bullet.getX() < 0) {
                 bullets.remove(i);
+                continue;
+            }
+
+            boolean bulletRemoved = false;
+            // Проверяем столкновение пули с турелями
+            for (int j = turrets.size() - 1; j >= 0; j--) {
+                TurentScript turret = turrets.get(j);
+                if (turret.checkCollisionBullet(bullet)) {
+                    turret.takeDamage(1); // Уменьшаем жизни турели на 1
+                    bullets.remove(i); // Удаляем пулю
+                    bulletRemoved = true;
+                    if (!turret.isAlive()) {
+                        turrets.remove(j); // Удаляем турель, если её жизни закончились
+                    }
+                    break;
+                }
+            }
+
+            if (bulletRemoved) {
                 continue;
             }
 
@@ -482,7 +474,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-
         for (int i = smallRunBooms.size() - 1; i >= 0; i--) {
             SmallRunBoom smallBoom = smallRunBooms.get(i);
             smallBoom.update(player.getX() + player.getWidth() / 2, player.getY() + player.getHeight() / 2);
@@ -495,8 +486,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             if (player.getX() + player.getWidth() > boomLeft &&
                     player.getX() < boomRight &&
                     player.getY() + player.getHeight() > boomTop &&
-                    player.getY() < boomBottom)
-            {
+                    player.getY() < boomBottom) {
                 if (currentTime - lastCollisionTime >= collisionCooldown) {
                     lastCollisionTime = currentTime;
                     life.decreaseLife(15);
@@ -508,7 +498,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             Bullet bullet = bullets.get(i);
             bullet.update();
 
-            // Пуля вышла за пределы экрана
             if (bullet.getX() > getWidth() || bullet.getX() < 0) {
                 bullets.remove(i);
                 continue;
@@ -528,7 +517,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         bulletBottom > diagonal1Bounds.top && bulletTop < diagonal1Bounds.bottom) {
                     bullets.remove(i);
                     smallRunBooms.remove(j);
-
                     bulletRemoved = true;
                     break;
                 }
@@ -583,6 +571,43 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
+        for (TurentScript turret : turrets) {
+            turret.update(1.0f / 60.0f, player);
+        }
+
+        for (int i = turretBullets.size() - 1; i >= 0; i--) {
+            TurretBullet turretBullet = turretBullets.get(i);
+            turretBullet.update(1.0f / 60.0f);
+
+            if (turretBullet.getX() > getWidth() || turretBullet.getX() < 0) {
+                turretBullets.remove(i);
+                continue;
+            }
+
+            if (turretBullet.getX() + TurretBullet.width > player.getX() &&
+                    turretBullet.getX() < player.getX() + player.getWidth() &&
+                    turretBullet.getY() + TurretBullet.height > player.getY() &&
+                    turretBullet.getY() < player.getY() + player.getHeight()) {
+                if (currentTime - lastCollisionTime >= collisionCooldown) {
+                    lastCollisionTime = currentTime;
+                    life.decreaseLife(25);
+                    Log.i("Collision", "Player hit by turret bullet");
+                }
+                turretBullets.remove(i);
+                continue;
+            }
+
+            for (Block block : blockList) {
+                if (turretBullet.getX() < block.getX() + block.getWidth() &&
+                        turretBullet.getX() + TurretBullet.width > block.getX() &&
+                        turretBullet.getY() < block.getY() + block.getHeight() &&
+                        turretBullet.getY() + TurretBullet.height > block.getY()) {
+                    turretBullets.remove(i);
+                    break;
+                }
+            }
+        }
+
         for (BlowingStone stone : blowingStones) {
             stone.update();
             if (stone.getY() > getHeight()) {
@@ -625,7 +650,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         long lastCoolestCollisionTime = 0;
-        final long coolestCollisionCooldown = 500; // 0.5 секунды
+        final long coolestCollisionCooldown = 500;
         for (Coolest coolest : coolestList) {
             coolest.update();
             if (coolest.checkCollisionWithPlayer(player)) {
@@ -682,7 +707,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         player.update();
     }
-
     private boolean checkCollisionWithWall(WallUpDownScript wall, Player player) {
         return player.getX() + player.getWidth() > wall.getX() &&
                 player.getX() < wall.getX() + wall.getWidth() &&
@@ -757,7 +781,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        // NEW: Draw illusory blocks here
         for (ilusoryblocks illusory : illusoryBlocks) {
             illusory.draw(canvas);
         }
@@ -791,6 +814,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             } catch (Exception ignored) {}
         }
 
+        for (TurretBullet turretBullet : turretBullets) {
+            try {
+                turretBullet.draw(canvas);
+            } catch (Exception ignored) {}
+        }
+
+        for (TurentScript turret : turrets) {
+            turret.draw(canvas);
+        }
+
+
         player.draw(canvas);
 
         for (BadBox badBox : badBoxList) {
@@ -811,6 +845,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             PauseFunction(canvas);
         }
     }
+
     public Player getPlayer() {
         return player;
     }
@@ -826,7 +861,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public List<Bullet> getBullets() {
         return bullets;
     }
-    public List<BadBoxBotScript> getBadBoxBot(){
+
+    public List<BadBoxBotScript> getBadBoxBot() {
         return badBoxBots;
     }
 
@@ -1094,6 +1130,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         isGamePaused = false;
         isLoad = false;
         bullets.clear();
+        turretBullets.clear(); // Очищаем пули турелей
         player.resetPosition();
         life.resetLife();
         resumeGame();
@@ -1108,7 +1145,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         });
     }
+    public List<SpeedGreenScript> getSpeedGreenScripts() {
+        return speedGreenScripts;
+    }
 
-    public List<SpeedGreenScript> getSpeedGreenScripts() {return speedGreenScripts;}
-    public List<SmallRunBoom> getSmallRunBooms() {return smallRunBooms;}
+    public List<SmallRunBoom> getSmallRunBooms() {
+        return smallRunBooms;
+    }
+
+    public void addTurretBullet(TurretBullet bullet) {
+        turretBullets.add(bullet);
+    }
 }

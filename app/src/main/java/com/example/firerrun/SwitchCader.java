@@ -122,6 +122,14 @@ public class SwitchCader {
                 ib.x+=deltaOffset;
             }
 
+            for (TurentScript turret : gameView.turrets) {
+                turret.x += deltaOffset;
+            }
+            for(TurretBullet turretBullet : gameView.turretBullets)
+            {
+                turretBullet.x+=deltaOffset;
+            }
+
             player.setX(player.getX() + deltaOffset);
 
             if (gameView.getBadBox() != null) {
