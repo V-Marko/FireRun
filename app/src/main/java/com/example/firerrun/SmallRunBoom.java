@@ -16,7 +16,7 @@ public class SmallRunBoom {
     public float speed;
     public Paint paint;
     public float SRBdistance;
-    private List<Block> blocks; // Список блоков для проверки столкновений
+    private List<Block> blocks;
 
     public SmallRunBoom(float x, float y, float width, float height, float speedRotate, float speed, float SRBdistance) {
         this.x = x;

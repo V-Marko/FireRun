@@ -22,7 +22,9 @@ import android.view.View;
 import android.view.WindowManager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean isInMenu = true;
@@ -56,6 +58,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     List<FinishScript> finishScripts = new ArrayList<>();
     private Rect[] levelButtons;
 
+
     private List<Block> blockList = new ArrayList<>();
     private List<Bullet> bullets = new ArrayList<>();
     private List<BadBox> badBoxList = new ArrayList<>();
@@ -63,6 +66,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public List<BlowingStone> blowingStones = new ArrayList<>();
     private List<BadBoxBotScript> badBoxBots = new ArrayList<>();
     List<ilusoryblocks> illusoryBlocks = new ArrayList<>();
+    List<Switch> switches = new ArrayList<>();
 
     public List<WallUpDownScript> wallUpDownScripts = new ArrayList<>();
     private Bitmap wallImage;
@@ -73,6 +77,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final long dropInterval = 2000;
 
     private int loadingDotsCount = 0;
+
     private final Handler loadingHandler = new Handler(Looper.getMainLooper());
     private final Runnable loadingRunnable = new Runnable() {
         @Override
@@ -88,6 +93,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     List<TurentScript> turrets = new ArrayList<>();
 
     public List<TurretBullet> turretBullets = new ArrayList<>();
+    private boolean isNearSwitch;
 
     public boolean isGamePaused() {
         return isGamePaused;
@@ -136,6 +142,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         illusoryBlocks.clear();
         turrets.clear();
         turretBullets.clear();
+        switches.clear();
+
 
         if (level - 1 >= 0 && level - 1 < BlockMoveList.BlockMove.length) {
             for (int[] blockData : BlockMoveList.BlockMove[level - 1]) {
@@ -148,6 +156,34 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 blockMoveScripts.add(blockMove);
             }
         }
+
+        if (level - 1 >= 0 && level - 1 < SwitchList.switches.length) {
+            for (int[] switchData : SwitchList.switches[level - 1]) {
+                Switch switchObj = new Switch(
+                        switchData[0], switchData[1], switchData[2], switchData[3], // Switch x, y, width, height
+                        switchData[4], switchData[5], switchData[6], switchData[7], // Block x, y, width, height
+                        switchData[8], switchData[9], // moveX, moveY
+                        getContext()
+                );
+                switches.add(switchObj);
+            }
+        }
+        if (level - 1 >= 0 && level - 1 < BlocksList.Blocks.length) {
+            for (int[] blockData : BlocksList.Blocks[level - 1]) {
+                int blockId;
+                switch (blockData[4]) {
+                    case 0: blockId = R.drawable.block; break;
+                    case 1: blockId = R.drawable.block2; break;
+                    case 2: blockId = R.drawable.oak_tree; break;
+                    case 3: blockId = R.drawable.oak2; break;
+                    case 4: blockId = R.drawable.barrel; break;
+                    default: blockId = R.drawable.block; break;
+                }
+                Block block = new Block(getContext(), blockData[0], blockData[1], blockData[2], blockData[3], blockId);
+                blockList.add(block);
+            }
+        }
+
 
         if (level - 1 >= 0 && level - 1 < wallUpDownList.wallUDList.length) {
             for (int[] wallData : wallUpDownList.wallUDList[level - 1]) {
@@ -284,6 +320,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         player.setBlocks(blockList);
+        player.setBlockMoveScripts(blockMoveScripts);
+        player.setSwitches(switches);
+
+
+        player.setBlocks(blockList);
         player.resetPosition();
         this.level = level;
     }
@@ -295,10 +336,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         isInMenu = true;
 
         player = new Player(context);
+        player.setSwitches(switches); // Передаем список переключателей
 
         loadLevel(level);
 
         player.setBlocks(blockList);
+        player.setBlockMoveScripts(blockMoveScripts);
 
         gameThread = new GameThread(getHolder(), this);
         life = new Life(context);
@@ -405,6 +448,30 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
+        // Проверка столкновения с Switch и управление видимостью btnUse
+        boolean isNearSwitch = false;
+        for (Switch switchObj : switches) {
+            switchObj.update();
+            if (switchObj.checkCollision(player)) {
+                isNearSwitch = true;
+                break; // Просто показываем кнопку, активация будет по нажатию
+            }
+        }
+
+        // Управление видимостью кнопки btnUse
+        final boolean shouldShowButton = isNearSwitch;
+        ((Activity) getContext()).runOnUiThread(() -> {
+            MainActivity.btnUse.setVisibility(shouldShowButton ? View.VISIBLE : View.GONE);
+        });
+
+        boolean isOnBlock = player.checkBlockCollision(blockList, blockMoveScripts, switches);
+
+        if (!isOnBlock && !player.jumping) {
+            player.y += player.jumpSpeed;
+            player.jumpSpeed += player.gravity;
+        }
+
+        // Остальная часть метода update() остается без изменений
         for (int i = bullets.size() - 1; i >= 0; i--) {
             Bullet bullet = bullets.get(i);
             bullet.update();
@@ -440,6 +507,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     break;
                 }
             }
+        }
+
+        for (Block block : blockList) {
+            block.update();
         }
 
         for (BoomScript boom : boomScripts) {
@@ -691,7 +762,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             life.decreaseLife(999_999_999);
         }
 
-        boolean isOnBlock = player.checkBlockCollision(blockList, blockMoveScripts);
         if (!isOnBlock) {
             player.LandRestriction = 500;
         }
@@ -778,10 +848,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 currentX += imageWidth;
             }
         }
+        for (Switch switchObj : switches) {
+            switchObj.draw(canvas);
+        }
 
         for (ilusoryblocks illusory : illusoryBlocks) {
             illusory.draw(canvas);
         }
+
 
         for (SmallRunBoom smallBoom : smallRunBooms) {
             smallBoom.draw(canvas);
@@ -1153,5 +1227,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     public void addTurretBullet(TurretBullet bullet) {
         turretBullets.add(bullet);
+    }
+    public List<Switch> getSwitches() {
+        return switches;
     }
 }

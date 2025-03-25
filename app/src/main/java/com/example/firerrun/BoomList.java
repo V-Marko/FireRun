@@ -11,7 +11,6 @@ public class BoomList {
             {//level 4
                     //   x     y    w    h   t
                        {500, 100, 150, 200, 100 },
-                    {2700, 100, 150, 200, 10}
             },
             {//level 5
 

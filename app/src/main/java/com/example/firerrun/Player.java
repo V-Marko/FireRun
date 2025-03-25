@@ -27,7 +27,9 @@ public class Player {
     public static float y;
     public float speed;
 
-    private boolean movingLeft, movingRight, jumping;
+    private boolean movingLeft;
+    private boolean movingRight;
+    boolean jumping;
     private boolean isIdle;
     public float jumpSpeed = 10;
     public Bitmap bodyImage;
@@ -44,18 +46,20 @@ public class Player {
     public int gunHeight = 90;
 
     private List<Block> blocks;
-    private List<BlockMoveScript> blockMoveScripts; // Добавляем список движущихся блоков
+    private List<BlockMoveScript> blockMoveScripts;
+    private List<Switch> switches; // Добавляем список переключателей
     public float LandRestriction = 500;
     public static List<Bullet> bullets;
 
     public static boolean isFacingLeft;
 
     private float initialJumpSpeed = -9.5f;
-    private float gravity = 0.38f;
-    private float maxJumpHeight = 4.75f; // max Jump height
+    float gravity = 0.38f;
+    private float maxJumpHeight = 4.75f;
 
     private float currentJumpHeight = 0f;
     private Animation animation;
+    private float moveSpeed;
 
     public Player(Context context) {
         this.context = context;
@@ -75,7 +79,8 @@ public class Player {
         bullets = new ArrayList<>();
         isIdle = true;
         blocks = new ArrayList<>();
-        blockMoveScripts = new ArrayList<>(); // Инициализируем список движущихся блоков
+        blockMoveScripts = new ArrayList<>();
+        switches = new ArrayList<>(); // Инициализируем список переключателей
 
         animation = new Animation(this);
 
@@ -138,7 +143,7 @@ public class Player {
             y = newY;
         }
 
-        boolean isOnBlock = checkBlockCollision(blocks, blockMoveScripts);
+        boolean isOnBlock = checkBlockCollision(blocks, blockMoveScripts, switches);
 
         if (!isOnBlock && !jumping) {
             y += jumpSpeed;
@@ -178,6 +183,21 @@ public class Player {
                 playerBottom > blockTop && playerTop < blockBottom;
     }
 
+    private boolean isCollidingWithSwitchBlock(float newX, float newY, Switch switchObj) {
+        float playerLeft = newX;
+        float playerRight = newX + width;
+        float playerTop = newY;
+        float playerBottom = newY + height;
+
+        float blockLeft = switchObj.getBlockX();
+        float blockRight = switchObj.getBlockX() + switchObj.getBlockWidth();
+        float blockTop = switchObj.getBlockY();
+        float blockBottom = switchObj.getBlockY() + switchObj.getBlockHeight();
+
+        return playerRight > blockLeft && playerLeft < blockRight &&
+                playerBottom > blockTop && playerTop < blockBottom;
+    }
+
     public void jump() {
         if (isOnGround() && !jumping) {
             jumping = true;
@@ -188,12 +208,12 @@ public class Player {
 
     public boolean isOnGround() {
         boolean groundCondition = (y >= LandRestriction);
-        boolean blockCondition = checkBlockCollision(blocks, blockMoveScripts);
+        boolean blockCondition = checkBlockCollision(blocks, blockMoveScripts, switches);
 
         return groundCondition || blockCondition;
     }
 
-    public boolean checkBlockCollision(List<Block> blocks, List<BlockMoveScript> blockMoveScripts) {
+    public boolean checkBlockCollision(List<Block> blocks, List<BlockMoveScript> blockMoveScripts, List<Switch> switches) {
         boolean isColliding = false;
         LandRestriction = Player.y - Player.height;
 
@@ -220,6 +240,9 @@ public class Player {
 
         // Проверка столкновений с движущимися блоками
         for (BlockMoveScript blockMove : blockMoveScripts) {
+            blockMove.update();
+        }
+        for (BlockMoveScript blockMove : blockMoveScripts) {
             if (Math.abs(blockMove.getX() - x) < 200 && Math.abs(blockMove.getY() - y) < 200) {
                 boolean xOverlap = (x < blockMove.getX() + blockMove.getWidth()) &&
                         (x + width > blockMove.getX());
@@ -234,8 +257,41 @@ public class Player {
                         y = blockMove.getY() - height;
                         LandRestriction = (int) blockMove.getY();
                         jumpSpeed = 0;
-                        // Дополнительно двигаем игрока вместе с блоком
                         x += blockMove.speed * (blockMove.movingRight ? 1 : -1);
+                    }
+                }
+            }
+        }
+
+        // Проверка столкновений с блоками Switch
+        for (Switch switchObj : switches) {
+            if (Math.abs(switchObj.getBlockX() - x) < 200 && Math.abs(switchObj.getBlockY() - y) < 200) {
+                boolean xOverlap = (x < switchObj.getBlockX() + switchObj.getBlockWidth()) &&
+                        (x + width > switchObj.getBlockX());
+
+                boolean yOverlap = (y + height >= switchObj.getBlockY()) &&
+                        (y + height <= switchObj.getBlockY() + switchObj.getBlockHeight());
+
+                if (xOverlap && yOverlap) {
+                    isColliding = true;
+
+                    if (y + height <= switchObj.getBlockY() + switchObj.getBlockHeight() && jumpSpeed >= 0) {
+                        y = switchObj.getBlockY() - height;
+                        LandRestriction = (int) switchObj.getBlockY();
+                        jumpSpeed = 0;
+                        // Если блок движется, двигаем игрока вместе с ним
+                        if (switchObj.isAnimating) {
+                            if (switchObj.getBlockX() < switchObj.targetX) {
+                                x += moveSpeed;
+                            } else if (switchObj.getBlockX() > switchObj.targetX) {
+                                x -= moveSpeed;
+                            }
+                            if (switchObj.getBlockY() < switchObj.targetY) {
+                                y += moveSpeed;
+                            } else if (switchObj.getBlockY() > switchObj.targetY) {
+                                y -= moveSpeed;
+                            }
+                        }
                     }
                 }
             }
@@ -272,9 +328,9 @@ public class Player {
             currentGunImage = Bitmap.createBitmap(gunImage, 0, 0, gunImage.getWidth(), gunImage.getHeight(), matrix, false);
         }
 
-        canvas.drawBitmap(currentBodyImage, x, y, null); // body
-        canvas.drawBitmap(currentHeadImage, x + (width - headWidth) / 2 - 15, y - headHeight + 20, null); // head
-        canvas.drawBitmap(currentGunImage, x, y, null); // gun
+        canvas.drawBitmap(currentBodyImage, x, y, null);
+        canvas.drawBitmap(currentHeadImage, x + (width - headWidth) / 2 - 15, y - headHeight + 20, null);
+        canvas.drawBitmap(currentGunImage, x, y, null);
 
         for (Bullet bullet : bullets) {
             bullet.draw(canvas);
@@ -363,6 +419,10 @@ public class Player {
 
     public void setBlockMoveScripts(List<BlockMoveScript> blockMoveScripts) {
         this.blockMoveScripts = blockMoveScripts;
+    }
+
+    public void setSwitches(List<Switch> switches) {
+        this.switches = switches;
     }
 
     public float getX() {
