@@ -411,9 +411,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         float originalSpeed = player.speed;
 
-        switchCader.updateCader();
 
-//        player.speed = originalSpeed;
+
+        switchCader.updateCader();
 
         for (WallUpDownScript wall : wallUpDownScripts) {
             wall.update();
