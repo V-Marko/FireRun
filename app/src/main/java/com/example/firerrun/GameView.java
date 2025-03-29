@@ -22,9 +22,7 @@ import android.view.View;
 import android.view.WindowManager;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean isInMenu = true;
@@ -37,8 +35,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Bitmap playerImage;
     private Paint textPaint;
     private BadBox badBox;
-    private Bullet bullet;
-    private Coolest coolest;
 
     private List<SpeedGreenScript> speedGreenScripts = new ArrayList<>();
 
@@ -57,7 +53,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     List<FinishScript> finishScripts = new ArrayList<>();
     private Rect[] levelButtons;
-
 
     private List<Block> blockList = new ArrayList<>();
     private List<Bullet> bullets = new ArrayList<>();
@@ -144,7 +139,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         turretBullets.clear();
         switches.clear();
 
-
         if (level - 1 >= 0 && level - 1 < BlockMoveList.BlockMove.length) {
             for (int[] blockData : BlockMoveList.BlockMove[level - 1]) {
                 BlockMoveScript blockMove = new BlockMoveScript(
@@ -183,7 +177,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 blockList.add(block);
             }
         }
-
 
         if (level - 1 >= 0 && level - 1 < wallUpDownList.wallUDList.length) {
             for (int[] wallData : wallUpDownList.wallUDList[level - 1]) {
@@ -323,11 +316,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         player.setBlockMoveScripts(blockMoveScripts);
         player.setSwitches(switches);
 
-
-        player.setBlocks(blockList);
         player.resetPosition();
         this.level = level;
     }
+
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
         getHolder().addCallback(this);
@@ -417,7 +409,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         long currentTime = System.currentTimeMillis();
 
+        float originalSpeed = player.speed;
+
         switchCader.updateCader();
+
+//        player.speed = originalSpeed;
 
         for (WallUpDownScript wall : wallUpDownScripts) {
             wall.update();
@@ -471,7 +467,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             player.jumpSpeed += player.gravity;
         }
 
-        // Остальная часть метода update() остается без изменений
         for (int i = bullets.size() - 1; i >= 0; i--) {
             Bullet bullet = bullets.get(i);
             bullet.update();
@@ -745,7 +740,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 break;
             }
         }
-        player.speed = isTouchingSpeedGreen ? 35f : 15f;
+        player.speed = isTouchingSpeedGreen ? 35f : originalSpeed; // Используем originalSpeed вместо 15f, если нет SpeedGreen
 
         for (BadBox badBox : badBoxList) {
             badBox.update();
@@ -775,6 +770,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         player.update();
     }
+
     private boolean checkCollisionWithWall(WallUpDownScript wall, Player player) {
         return player.getX() + player.getWidth() > wall.getX() &&
                 player.getX() < wall.getX() + wall.getWidth() &&
@@ -856,7 +852,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             illusory.draw(canvas);
         }
 
-
         for (SmallRunBoom smallBoom : smallRunBooms) {
             smallBoom.draw(canvas);
         }
@@ -895,7 +890,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         for (TurentScript turret : turrets) {
             turret.draw(canvas);
         }
-
 
         player.draw(canvas);
 
@@ -1217,6 +1211,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         });
     }
+
     public List<SpeedGreenScript> getSpeedGreenScripts() {
         return speedGreenScripts;
     }
@@ -1228,6 +1223,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public void addTurretBullet(TurretBullet bullet) {
         turretBullets.add(bullet);
     }
+
     public List<Switch> getSwitches() {
         return switches;
     }

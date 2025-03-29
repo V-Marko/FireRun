@@ -12,18 +12,18 @@ public class Switch {
     public float y;
     public float width;
     public float height;
-    public static float BlockX;
-    public static float BlockY;
-    public static float BlockWidth;
-    public static float BlockHeight;
+    public float BlockX;
+    public float BlockY;
+    public float BlockWidth;
+    public float BlockHeight;
     private Bitmap switchImage;
     private Bitmap blockImage;
     private boolean isActivated = false;
-    private int moveX;
-    private int moveY;
+    public int moveX;
+    public int moveY;
     boolean isAnimating = false;
-    float targetX;
-    float targetY;
+    public float targetX;
+    public float targetY;
     private float moveSpeed = 5.0f;
 
     public Switch(float x, float y, float width, float height, float blockX, float blockY, float blockWidth, float blockHeight, int moveX, int moveY, Context context) {
@@ -48,10 +48,9 @@ public class Switch {
     public void draw(Canvas canvas) {
         if (switchImage != null) {
             if (isActivated) {
-                // Зеркальное отражение для активированного состояния
                 Matrix matrix = new Matrix();
-                matrix.setScale(-1, 1); // Отражение по горизонтали
-                matrix.postTranslate(x + width, y); // Смещение обратно к позиции x, y
+                matrix.setScale(-1, 1);
+                matrix.postTranslate(x + width, y);
                 canvas.drawBitmap(switchImage, matrix, null);
             } else {
                 // Обычная отрисовка
@@ -76,7 +75,6 @@ public class Switch {
             isAnimating = true;
             targetX = BlockX + moveX;
             targetY = BlockY + moveY;
-            Log.i("Switch", "Starting block movement from (" + BlockX + ", " + BlockY + ") to (" + targetX + ", " + targetY + ")");
         }
     }
 
@@ -100,7 +98,6 @@ public class Switch {
 
             if (BlockX == targetX && BlockY == targetY) {
                 isAnimating = false;
-                Log.i("Switch", "Block movement complete at (" + BlockX + ", " + BlockY + ")");
             }
         }
     }

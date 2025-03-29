@@ -498,4 +498,7 @@ public class Player {
         isFacingLeft = false;
         bullets.clear();
     }
+
+//    public void setGameView(GameView gameView) {
+//    }
 }
