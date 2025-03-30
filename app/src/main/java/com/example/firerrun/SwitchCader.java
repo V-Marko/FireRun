@@ -30,7 +30,7 @@ public class SwitchCader {
     }
 
     public void updateCader() {
-        float threshold = screenSize / 3; // Теперь 1/3 экрана вместо 35%
+        float threshold = screenSize / 2;//TODO: cader switch size
         float playerX = player.getX();
 
         if (isAnimating) {
