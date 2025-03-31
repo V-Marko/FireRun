@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
+    public static int headState = 0;
+
     private boolean isInMenu = true;
     public int level = 1;
     private Bitmap background;
@@ -35,8 +37,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Bitmap playerImage;
     private Paint textPaint;
     private BadBox badBox;
+    private Rect personButton;
+    private boolean isPersonScreenVisible = false;
+    private Rect backButton;
 
     private List<SpeedGreenScript> speedGreenScripts = new ArrayList<>();
+
+    private Rect leftButton;
+    private Rect rightButton;
+    private Bitmap currentHeadBitmap;
+    private Bitmap bodyBitmap;
+    private Bitmap gunBitmap;
 
     private long lastCollisionTime = 0;
     private final long collisionCooldown = 300;
@@ -89,6 +100,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     public List<TurretBullet> turretBullets = new ArrayList<>();
     private boolean isNearSwitch;
+
+    // Переменные для отслеживания двойного касания
+    private long lastTouchTime = 0;
+    private final long doubleTapThreshold = 300; // Максимальный интервал между касаниями в миллисекундах
+    private boolean isDoubleTapProcessed = false; // Флаг для предотвращения повторной обработки
 
     public boolean isGamePaused() {
         return isGamePaused;
@@ -154,14 +170,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (level - 1 >= 0 && level - 1 < SwitchList.switches.length) {
             for (int[] switchData : SwitchList.switches[level - 1]) {
                 Switch switchObj = new Switch(
-                        switchData[0], switchData[1], switchData[2], switchData[3], // Switch x, y, width, height
-                        switchData[4], switchData[5], switchData[6], switchData[7], // Block x, y, width, height
-                        switchData[8], switchData[9], // moveX, moveY
+                        switchData[0], switchData[1], switchData[2], switchData[3],
+                        switchData[4], switchData[5], switchData[6], switchData[7],
+                        switchData[8], switchData[9],
                         getContext()
                 );
                 switches.add(switchObj);
             }
         }
+
         if (level - 1 >= 0 && level - 1 < BlocksList.Blocks.length) {
             for (int[] blockData : BlocksList.Blocks[level - 1]) {
                 int blockId;
@@ -327,8 +344,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         isMenuVisible = true;
         isInMenu = true;
 
-        player = new Player(context);
-        player.setSwitches(switches); // Передаем список переключателей
+        player = new Player(context, this);
+        player.setSwitches(switches);
 
         loadLevel(level);
 
@@ -351,6 +368,23 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         wallImage = BitmapFactory.decodeResource(getResources(), R.drawable.wall);
         blockImage = BitmapFactory.decodeResource(getResources(), R.drawable.block);
+
+        float scaleFactor = 1.0f;
+        bodyBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.person_stop1);
+        if (bodyBitmap == null) {
+            Log.e("GameView", "Failed to load person_stop1");
+        } else {
+            bodyBitmap = Bitmap.createScaledBitmap(bodyBitmap, (int) (394 * scaleFactor), (int) (437 * scaleFactor), true);
+        }
+
+        updatePlayerHead();
+
+        gunBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.person_gun);
+        if (gunBitmap == null) {
+            Log.e("GameView", "Failed to load person_gun");
+        } else {
+            gunBitmap = Bitmap.createScaledBitmap(gunBitmap, (int) (523 * scaleFactor), (int) (191 * scaleFactor), true);
+        }
     }
 
     public static int getScreenWidth(Context context) {
@@ -411,8 +445,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         float originalSpeed = player.speed;
 
-
-
         switchCader.updateCader();
 
         for (WallUpDownScript wall : wallUpDownScripts) {
@@ -444,17 +476,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        // Проверка столкновения с Switch и управление видимостью btnUse
         boolean isNearSwitch = false;
         for (Switch switchObj : switches) {
             switchObj.update();
             if (switchObj.checkCollision(player)) {
                 isNearSwitch = true;
-                break; // Просто показываем кнопку, активация будет по нажатию
+                break;
             }
         }
 
-        // Управление видимостью кнопки btnUse
         final boolean shouldShowButton = isNearSwitch;
         ((Activity) getContext()).runOnUiThread(() -> {
             MainActivity.btnUse.setVisibility(shouldShowButton ? View.VISIBLE : View.GONE);
@@ -740,7 +770,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 break;
             }
         }
-        player.speed = isTouchingSpeedGreen ? 35f : originalSpeed; // Используем originalSpeed вместо 15f, если нет SpeedGreen
+        player.speed = isTouchingSpeedGreen ? 35f : originalSpeed;
 
         for (BadBox badBox : badBoxList) {
             badBox.update();
@@ -806,6 +836,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
 
+        if (isPersonScreenVisible) {
+            drawPersonScreen(canvas);
+            return;
+        }
+
         if (background != null) {
             canvas.drawBitmap(background, 0, 0, null);
         }
@@ -844,6 +879,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 currentX += imageWidth;
             }
         }
+
         for (Switch switchObj : switches) {
             switchObj.draw(canvas);
         }
@@ -907,7 +943,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             block.draw(canvas);
         }
 
-        if (isGamePaused) {
+        if (isGamePaused && !isPersonScreenVisible) {
             PauseFunction(canvas);
         }
     }
@@ -961,7 +997,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         @Override
         public void run() {
             long lastTime = System.nanoTime();
-            double nsPerUpdate = 1_000_000_000.0 / 60.0; // 60 FPS
+            double nsPerUpdate = 1_000_000_000.0 / 60.0;
             double delta = 0;
 
             while (running) {
@@ -1029,6 +1065,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         menuButton = new Rect(centerX - buttonWidth / 2, startY, centerX + buttonWidth / 2, startY + buttonHeight);
         canvas.drawRect(menuButton, buttonPaint);
         canvas.drawText("Menu", centerX, startY + 100, buttonTextPaint);
+
+        personButton = new Rect(centerX - buttonWidth / 2, startY + buttonHeight + 50,
+                centerX + buttonWidth / 2, startY + buttonHeight * 2 + 50);
+        canvas.drawRect(personButton, buttonPaint);
+        canvas.drawText("Person", centerX, startY + buttonHeight + 150, buttonTextPaint);
     }
 
     public void MenuLevelsFunction(Canvas canvas) {
@@ -1079,6 +1120,64 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    private void drawPersonScreen(Canvas canvas) {
+        Paint backgroundPaint = new Paint();
+        backgroundPaint.setColor(Color.BLACK);
+        canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
+
+        int screenWidth = getWidth();
+        int screenHeight = getHeight();
+
+        if (bodyBitmap != null) {
+            int bodyWidth = bodyBitmap.getWidth();
+            int bodyHeight = bodyBitmap.getHeight();
+            float bodyX = (screenWidth - bodyWidth) / 2f;
+            float bodyY = screenHeight - bodyHeight - 50f;
+            canvas.drawBitmap(bodyBitmap, bodyX, bodyY, null);
+
+            if (currentHeadBitmap != null) {
+                int headWidth = currentHeadBitmap.getWidth();
+                int headHeight = currentHeadBitmap.getHeight();
+                float headX = (screenWidth - headWidth) / 2f;
+                float headY = bodyY - headHeight + 50f;
+                canvas.drawBitmap(currentHeadBitmap, headX, headY, null);
+            }
+
+            if (gunBitmap != null) {
+                int gunWidth = gunBitmap.getWidth();
+                int gunHeight = gunBitmap.getHeight();
+                float gunX = (screenWidth - gunWidth) / 2f + 90;
+                float gunY = bodyY + (bodyHeight / 2f) - (gunHeight / 2f) - 170f;
+                canvas.drawBitmap(gunBitmap, gunX, gunY, null);
+            }
+
+            Paint buttonPaint = new Paint();
+            buttonPaint.setColor(Color.DKGRAY);
+
+            Paint buttonTextPaint = new Paint();
+            buttonTextPaint.setColor(Color.WHITE);
+            buttonTextPaint.setTextSize(80);
+            buttonTextPaint.setTextAlign(Paint.Align.CENTER);
+
+            int buttonWidth = getWidth() / 6;
+            int buttonHeight = 100;
+
+            backButton = new Rect(50, 50, 50 + buttonWidth, 50 + buttonHeight);
+            canvas.drawRect(backButton, buttonPaint);
+            canvas.drawText("Back", 50 + buttonWidth / 2, 50 + buttonHeight / 2 + 25, buttonTextPaint);
+
+            leftButton = new Rect((int) (bodyX - buttonWidth - 20), (int) (bodyY + bodyHeight / 2 - buttonHeight / 2),
+                    (int) (bodyX - 20), (int) (bodyY + bodyHeight / 2 + buttonHeight / 2));
+            canvas.drawRect(leftButton, buttonPaint);
+            canvas.drawText("Left", leftButton.centerX(), leftButton.centerY() + 25, buttonTextPaint);
+
+            rightButton = new Rect((int) (bodyX + bodyWidth + 20), (int) (bodyY + bodyHeight / 2 - buttonHeight / 2),
+                    (int) (bodyX + bodyWidth + buttonWidth + 20), (int) (bodyY + bodyHeight / 2 + buttonHeight / 2));
+            canvas.drawRect(rightButton, buttonPaint);
+            canvas.drawText("Right", rightButton.centerX(), rightButton.centerY() + 25, buttonTextPaint);
+        }
+    }
+
     public void startLoadingAnimation() {
         loadingHandler.post(loadingRunnable);
     }
@@ -1122,10 +1221,90 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         float touchY = event.getY();
 
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            if (isGamePaused) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastTouchTime < doubleTapThreshold && !isInMenu && !isGamePaused && !isLoad && !isPersonScreenVisible && !isDoubleTapProcessed) {
+                // Обнаружено двойное касание во время игры
+                headState = (headState == 0) ? 1 : 0;
+                updatePlayerHead();
+                Log.i("GameView", "Head changed during gameplay to state: " + headState);
+                isDoubleTapProcessed = true;
+                lastTouchTime = 0;
+                invalidate();
+                return true;
+            }
+            lastTouchTime = currentTime;
+            isDoubleTapProcessed = false;
+
+            if (isPersonScreenVisible) {
+                if (backButton != null && backButton.contains((int) touchX, (int) touchY)) {
+                    isPersonScreenVisible = false;
+                    // Обновляем голову игрока перед возвратом в игру
+                    updatePlayerHead();
+                    player.updateHeadImage(); // Убедимся, что Player тоже обновляет свою голову
+                    invalidate();
+                    return true;
+                }
+                if (leftButton != null && leftButton.contains((int) touchX, (int) touchY)) {
+                    headState = (headState == 0) ? 1 : 0;
+                    updatePlayerHead();
+                    if (currentHeadBitmap != null) {
+                        SurfaceHolder holder = getHolder();
+                        Canvas canvas = null;
+                        try {
+                            canvas = holder.lockCanvas();
+                            if (canvas != null) {
+                                drawPersonScreen(canvas);
+                            }
+                        } finally {
+                            if (canvas != null) {
+                                holder.unlockCanvasAndPost(canvas);
+                            }
+                        }
+                    }
+                    return true;
+                }
+                if (rightButton != null && rightButton.contains((int) touchX, (int) touchY)) {
+                    Log.i("PersonSwitch", "Right");
+                    headState = (headState == 0) ? 1 : 0;
+                    updatePlayerHead();
+                    if (currentHeadBitmap != null) {
+                        SurfaceHolder holder = getHolder();
+                        Canvas canvas = null;
+                        try {
+                            canvas = holder.lockCanvas();
+                            if (canvas != null) {
+                                drawPersonScreen(canvas);
+                            }
+                        } finally {
+                            if (canvas != null) {
+                                holder.unlockCanvasAndPost(canvas);
+                            }
+                        }
+                    }
+                    return true;
+                }
+            }
+
+            if (isGamePaused && !isPersonScreenVisible) {
                 if (menuButton != null && menuButton.contains((int) touchX, (int) touchY)) {
                     Log.i("Menu", "MENUUUU");
                     goToMenu();
+                    return true;
+                }
+                if (personButton != null && personButton.contains((int) touchX, (int) touchY)) {
+                    isPersonScreenVisible = true;
+                    SurfaceHolder holder = getHolder();
+                    Canvas canvas = null;
+                    try {
+                        canvas = holder.lockCanvas();
+                        if (canvas != null) {
+                            drawPersonScreen(canvas);
+                        }
+                    } finally {
+                        if (canvas != null) {
+                            holder.unlockCanvasAndPost(canvas);
+                        }
+                    }
                     return true;
                 }
             }
@@ -1160,6 +1339,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
         return super.onTouchEvent(event);
+    }
+
+    private void updatePlayerHead() {
+        player.updateHeadImage(); // Убедимся, что Player обновляет свою голову
+        float scaleFactor = 1.0f;
+        currentHeadBitmap = player.headImage; // Используем голову из Player
+        if (currentHeadBitmap == null) {
+            Log.e("GameView", "Failed to update player head");
+        } else {
+            currentHeadBitmap = Bitmap.createScaledBitmap(currentHeadBitmap, (int) (425 * scaleFactor), (int) (421 * scaleFactor), true);
+        }
+        invalidate(); // Перерисовываем экран
     }
 
     private class LoadLevelTask extends AsyncTask<Integer, Void, Void> {
