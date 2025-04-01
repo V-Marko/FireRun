@@ -2,6 +2,7 @@ package com.example.firerrun;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,13 +19,17 @@ public class MainActivity extends Activity {
     public static Button btnPause;
     public static Button btnUse;
 
+    public static MediaPlayer shoot_voice;
+
+    public static MediaPlayer run_voice;
+    public static MediaPlayer backgorund_voice;
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Инициализация кнопок
         btnLeft = findViewById(R.id.btnLeft);
         btnRight = findViewById(R.id.btnRight);
         btnJump = findViewById(R.id.btnJump);
@@ -32,7 +37,6 @@ public class MainActivity extends Activity {
         btnPause = findViewById(R.id.btnPause);
         btnUse = findViewById(R.id.btnUse);
 
-        // Установка начальной видимости кнопок
         btnPause.setVisibility(View.VISIBLE);
         btnLeft.setVisibility(View.VISIBLE);
         btnRight.setVisibility(View.VISIBLE);
@@ -40,12 +44,18 @@ public class MainActivity extends Activity {
         btnShoot.setVisibility(View.VISIBLE);
         btnUse.setVisibility(View.GONE);
 
-        // Инициализация GameView и PlayerController
         gameView = findViewById(R.id.gameView);
         Player player = gameView.getPlayer();
         playerController = new PlayerController(player, gameView);
 
-        // Обработчик кнопки Pause
+        shoot_voice = MediaPlayer.create(this, R.raw.shoot_voice_n1);
+        run_voice = MediaPlayer.create(this, R.raw.runing_voice);
+        backgorund_voice = MediaPlayer.create(this, R.raw.background_voice);
+        backgorund_voice.setLooping(true);
+        float volume = 0.3f;
+        backgorund_voice.setVolume(volume, volume);
+        backgorund_voice.start();
+
         btnPause.setOnClickListener(v -> {
             if (gameView.isGamePaused()) {
                 gameView.resumeGame();
@@ -57,10 +67,10 @@ public class MainActivity extends Activity {
             }
         });
 
-        // Обработчик кнопки Left
         btnLeft.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
+
                     playerController.moveLeft();
                     break;
                 case MotionEvent.ACTION_UP:
@@ -70,7 +80,6 @@ public class MainActivity extends Activity {
             return true;
         });
 
-        // Обработчик кнопки Right
         btnRight.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
@@ -83,7 +92,6 @@ public class MainActivity extends Activity {
             return true;
         });
 
-        // Обработчик кнопки Jump
         btnJump.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 playerController.jump();
@@ -91,16 +99,14 @@ public class MainActivity extends Activity {
             return true;
         });
 
-        // Обработчик кнопки Shoot
         btnShoot.setOnClickListener(v -> playerController.onShootButtonPressed());
 
-        // Обработчик кнопки Use для движения блока
         btnUse.setOnClickListener(v -> {
             for (Switch switchObj : gameView.getSwitches()) {
-                if (switchObj.checkCollision(player) && !switchObj.isActivated()) { // Проверяем столкновение и что еще не активирован
-                    switchObj.activate(); // Запускаем движение блока
+                if (switchObj.checkCollision(player) && !switchObj.isActivated()) {
+                    switchObj.activate();
                     android.util.Log.i("Switch", "Block movement started via button at (" + switchObj.getBlockX() + ", " + switchObj.getBlockY() + ")");
-                    break; // Обрабатываем только первый подходящий переключатель
+                    break;
                 }
             }
         });

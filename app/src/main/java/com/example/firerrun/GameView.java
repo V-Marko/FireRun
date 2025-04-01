@@ -9,6 +9,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
@@ -398,6 +399,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         boolean isFacingLeft = Player.isFacingLeft;
         float bulletX = isFacingLeft ? (player.getX() - Bullet.width) : (player.getX() + player.getWidth());
         float bulletY = player.getY();
+
+        MainActivity.shoot_voice.start();
+
+
+
 
         Bullet newBullet = new Bullet(bulletX, bulletY, BitmapFactory.decodeResource(getResources(), R.drawable.bullet), isFacingLeft);
         bullets.add(newBullet);

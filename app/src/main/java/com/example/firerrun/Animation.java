@@ -34,23 +34,14 @@ public class Animation {
 
         for (int i = 0; i < frameResources.length; i++) {
             walkFrames[i] = BitmapFactory.decodeResource(player.getContext().getResources(), frameResources[i]);
-            if (walkFrames[i] == null) {
-                Log.e("Animation", "Failed to load walkFrame " + i);
-            }
         }
         for (int i = 0; i < frameResourcesStop.length; i++) {
             walkFramesStop[i] = BitmapFactory.decodeResource(player.getContext().getResources(), frameResourcesStop[i]);
-            if (walkFramesStop[i] == null) {
-                Log.e("Animation", "Failed to load walkFrameStop " + i);
-            }
         }
     }
 
     private void loadGunImage() {
         gunImage = BitmapFactory.decodeResource(player.getContext().getResources(), R.drawable.person_gun);
-        if (gunImage == null) {
-            Log.e("Animation", "Failed to load gunImage");
-        }
     }
 
     public void startWalkingAnimation() {

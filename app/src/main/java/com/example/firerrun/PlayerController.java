@@ -18,21 +18,25 @@ public class PlayerController {
     }
 
     public void moveLeft() {
-
+        MainActivity.run_voice.start();
         player.setMovingLeft(true);
         player.setMovingRight(false);
     }
-    
+
     public void stopLeft() {
+        MainActivity.run_voice.pause(); // Замена stop() на pause()
         player.setMovingLeft(false);
     }
 
     public void moveRight() {
+        MainActivity.run_voice.start();
+
         player.setMovingRight(true);
         player.setMovingLeft(false);
     }
 
     public void stopRight() {
+        MainActivity.run_voice.pause(); // Замена stop() на pause()
         player.setMovingRight(false);
     }
 
