@@ -13,8 +13,11 @@ import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicBlur;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -28,6 +31,11 @@ import java.util.List;
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public static int headState = 0;
 
+
+    //Volse
+    private int backgorundVole = 0;
+
+
     private boolean isInMenu = true;
     public int level = 1;
     private Bitmap background;
@@ -40,7 +48,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private BadBox badBox;
     private Rect personButton;
     private boolean isPersonScreenVisible = false;
+
     private Rect backButton;
+    private Rect buttonSoundOnOFF;
 
     private List<SpeedGreenScript> speedGreenScripts = new ArrayList<>();
 
@@ -62,6 +72,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Rect menuButton;
 
     private boolean isLoad = false;
+    private boolean isSettingsScreenVisible = false;
 
     List<FinishScript> finishScripts = new ArrayList<>();
     private Rect[] levelButtons;
@@ -102,10 +113,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public List<TurretBullet> turretBullets = new ArrayList<>();
     private boolean isNearSwitch;
 
-    // Переменные для отслеживания двойного касания
     private long lastTouchTime = 0;
-    private final long doubleTapThreshold = 300; // Максимальный интервал между касаниями в миллисекундах
-    private boolean isDoubleTapProcessed = false; // Флаг для предотвращения повторной обработки
+    private final long doubleTapThreshold = 300;
+    private boolean isDoubleTapProcessed = false;
+    private Rect settingsButton;
 
     public boolean isGamePaused() {
         return isGamePaused;
@@ -373,7 +384,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         float scaleFactor = 1.0f;
         bodyBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.person_stop1);
         if (bodyBitmap == null) {
-            Log.e("GameView", "Failed to load person_stop1");
         } else {
             bodyBitmap = Bitmap.createScaledBitmap(bodyBitmap, (int) (394 * scaleFactor), (int) (437 * scaleFactor), true);
         }
@@ -382,7 +392,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         gunBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.person_gun);
         if (gunBitmap == null) {
-            Log.e("GameView", "Failed to load person_gun");
         } else {
             gunBitmap = Bitmap.createScaledBitmap(gunBitmap, (int) (523 * scaleFactor), (int) (191 * scaleFactor), true);
         }
@@ -477,7 +486,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 if (currentTime - lastCollisionTime >= collisionCooldown) {
                     lastCollisionTime = currentTime;
                     life.decreaseLife(20);
-                    Log.i("Collision", "Player hit by BadBoxBot");
                 }
             }
         }
@@ -691,7 +699,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 if (currentTime - lastCollisionTime >= collisionCooldown) {
                     lastCollisionTime = currentTime;
                     life.decreaseLife(25);
-                    Log.i("Collision", "Player hit by turret bullet");
                 }
                 turretBullets.remove(i);
                 continue;
@@ -784,7 +791,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 if (currentTime - lastCollisionTime >= collisionCooldown) {
                     lastCollisionTime = currentTime;
                     life.decreaseLife(20);
-                    Log.i("info", "Player collided with BadBox and lost life");
                 }
             }
         }
@@ -844,6 +850,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         if (isPersonScreenVisible) {
             drawPersonScreen(canvas);
+            return;
+        }
+        if (isSettingsScreenVisible) {
+            drawSettingsScreen(canvas);
             return;
         }
 
@@ -1063,31 +1073,70 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         buttonTextPaint.setTextSize(80);
         buttonTextPaint.setTextAlign(Paint.Align.CENTER);
 
-        int buttonWidth = getWidth() / 2;
+        int buttonWidth = getWidth() / 4;
         int buttonHeight = 150;
         int centerX = getWidth() / 2;
-        int startY = getHeight() / 2;
+        int spacing = 20;
 
-        menuButton = new Rect(centerX - buttonWidth / 2, startY, centerX + buttonWidth / 2, startY + buttonHeight);
+        int menuButtonY = getHeight() / 2 - buttonHeight / 2 - 100;
+        menuButton = new Rect(
+                centerX - buttonWidth,
+                menuButtonY,
+                centerX + buttonWidth,
+                menuButtonY + buttonHeight
+        );
+
         canvas.drawRect(menuButton, buttonPaint);
-        canvas.drawText("Menu", centerX, startY + 100, buttonTextPaint);
+        canvas.drawText("Menu", centerX, menuButtonY + buttonHeight / 2 + 25, buttonTextPaint);
 
-        personButton = new Rect(centerX - buttonWidth / 2, startY + buttonHeight + 50,
-                centerX + buttonWidth / 2, startY + buttonHeight * 2 + 50);
+        int lowerButtonsY = menuButtonY + buttonHeight + spacing;
+
+        personButton = new Rect(
+                centerX - buttonWidth - spacing / 2 - buttonWidth,
+                lowerButtonsY,
+                centerX - spacing / 2,
+                lowerButtonsY + buttonHeight
+        );
         canvas.drawRect(personButton, buttonPaint);
-        canvas.drawText("Person", centerX, startY + buttonHeight + 150, buttonTextPaint);
+        canvas.drawText("Person", personButton.centerX(), lowerButtonsY + buttonHeight / 2 + 25, buttonTextPaint);
+
+        settingsButton = new Rect(
+                centerX + spacing / 2,
+                lowerButtonsY,
+                centerX + buttonWidth + spacing / 2 + buttonWidth,
+                lowerButtonsY + buttonHeight
+        );
+        canvas.drawRect(settingsButton, buttonPaint);
+        canvas.drawText("Settings", settingsButton.centerX(), lowerButtonsY + buttonHeight / 2 + 25, buttonTextPaint);
     }
 
     public void MenuLevelsFunction(Canvas canvas) {
+        Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
+        int screenWidth = getWidth();
+        int screenHeight = getHeight();
+
+        float scale = (float) screenWidth / background.getWidth();
+        int newWidth = Math.round(background.getWidth() * scale);
+        int newHeight = Math.round(background.getHeight() * scale);
+
+        Bitmap scaledBackground = Bitmap.createScaledBitmap(background, newWidth, newHeight, true);
+        scaledBackground = blurBitmap(scaledBackground);
+
+        int offsetX = 0;
+        int offsetY = screenHeight - newHeight;
+
+        canvas.drawBitmap(scaledBackground, offsetX, offsetY, null);
+
         Paint backgroundPaint = new Paint();
-        backgroundPaint.setColor(Color.argb(180, 0, 0, 0));
+        backgroundPaint.setColor(Color.argb(100, 0, 0, 0));
         canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
 
         Paint textPaint = new Paint();
-        textPaint.setColor(Color.WHITE);
+        textPaint.setColor(Color.BLACK);
         textPaint.setTextSize(100);
         textPaint.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText("Select Level", getWidth() / 2, getHeight() / 6, textPaint);
+        textPaint.setFakeBoldText(true);
+        canvas.drawText("Select Level", getWidth() / 2, 150, textPaint);
 
         Paint buttonPaint = new Paint();
         buttonPaint.setColor(Color.DKGRAY);
@@ -1121,18 +1170,36 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             int y = startY + row * (buttonHeight + padding);
 
             levelButtons[i] = new Rect(x, y, x + buttonWidth, y + buttonHeight);
+
+            buttonPaint.setShadowLayer(10, 0, 0, Color.BLACK);
             canvas.drawRect(levelButtons[i], buttonPaint);
+
             canvas.drawText("Level " + (i + 1), x + buttonWidth / 2, y + buttonHeight / 2 + 20, buttonTextPaint);
         }
     }
-
     private void drawPersonScreen(Canvas canvas) {
-        Paint backgroundPaint = new Paint();
-        backgroundPaint.setColor(Color.BLACK);
-        canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
-
+        Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
         int screenWidth = getWidth();
         int screenHeight = getHeight();
+
+        float scale = (float) screenWidth / background.getWidth();
+        int newWidth = Math.round(background.getWidth() * scale);
+        int newHeight = Math.round(background.getHeight() * scale);
+
+        Bitmap scaledBackground = Bitmap.createScaledBitmap(background, newWidth, newHeight, true);
+        scaledBackground = blurBitmap(scaledBackground);
+
+        int offsetX = 0;
+        int offsetY = screenHeight - newHeight;
+
+        canvas.drawBitmap(scaledBackground, offsetX, offsetY, null);
+
+        Paint titlePaint = new Paint();
+        titlePaint.setColor(Color.BLACK);
+        titlePaint.setTextSize(100);
+        titlePaint.setTextAlign(Paint.Align.CENTER);
+        titlePaint.setFakeBoldText(true);
+        canvas.drawText("Person Settings", screenWidth / 2, 150, titlePaint);
 
         if (bodyBitmap != null) {
             int bodyWidth = bodyBitmap.getWidth();
@@ -1165,24 +1232,104 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             buttonTextPaint.setTextSize(80);
             buttonTextPaint.setTextAlign(Paint.Align.CENTER);
 
-            int buttonWidth = getWidth() / 6;
+            int buttonWidth = screenWidth / 6;
             int buttonHeight = 100;
 
-            backButton = new Rect(50, 50, 50 + buttonWidth, 50 + buttonHeight);
             canvas.drawRect(backButton, buttonPaint);
-            canvas.drawText("Back", 50 + buttonWidth / 2, 50 + buttonHeight / 2 + 25, buttonTextPaint);
+            canvas.drawText("Accept", 50 + buttonWidth / 2, 50 + buttonHeight / 2 + 25, buttonTextPaint);
 
-            leftButton = new Rect((int) (bodyX - buttonWidth - 20), (int) (bodyY + bodyHeight / 2 - buttonHeight / 2),
-                    (int) (bodyX - 20), (int) (bodyY + bodyHeight / 2 + buttonHeight / 2));
+            leftButton = new Rect(
+                    (int) (bodyX - buttonWidth - 20),
+                    (int) (bodyY + bodyHeight / 2 - buttonHeight / 2),
+                    (int) (bodyX - 20),
+                    (int) (bodyY + bodyHeight / 2 + buttonHeight / 2)
+            );
             canvas.drawRect(leftButton, buttonPaint);
             canvas.drawText("Left", leftButton.centerX(), leftButton.centerY() + 25, buttonTextPaint);
 
-            rightButton = new Rect((int) (bodyX + bodyWidth + 20), (int) (bodyY + bodyHeight / 2 - buttonHeight / 2),
-                    (int) (bodyX + bodyWidth + buttonWidth + 20), (int) (bodyY + bodyHeight / 2 + buttonHeight / 2));
+            rightButton = new Rect(
+                    (int) (bodyX + bodyWidth + 20),
+                    (int) (bodyY + bodyHeight / 2 - buttonHeight / 2),
+                    (int) (bodyX + bodyWidth + buttonWidth + 20),
+                    (int) (bodyY + bodyHeight / 2 + buttonHeight / 2)
+            );
             canvas.drawRect(rightButton, buttonPaint);
             canvas.drawText("Right", rightButton.centerX(), rightButton.centerY() + 25, buttonTextPaint);
         }
     }
+
+    private void drawSettingsScreen(Canvas canvas) {
+        Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
+
+        int screenWidth = getWidth();
+        int screenHeight = getHeight();
+
+        float scale = (float) screenWidth / background.getWidth();
+        int newWidth = Math.round(background.getWidth() * scale);
+        int newHeight = Math.round(background.getHeight() * scale);
+
+        Bitmap scaledBackground = Bitmap.createScaledBitmap(background, newWidth, newHeight, true);
+        scaledBackground = blurBitmap(scaledBackground);
+
+        int offsetX = 0;
+        int offsetY = screenHeight - newHeight;
+
+        canvas.drawBitmap(scaledBackground, offsetX, offsetY, null);
+
+        Paint titlePaint = new Paint();
+        titlePaint.setColor(Color.BLACK);
+        titlePaint.setTextSize(100);
+        titlePaint.setTextAlign(Paint.Align.CENTER);
+        titlePaint.setFakeBoldText(true);
+
+        canvas.drawText("Settings", screenWidth / 2, 150, titlePaint);
+
+        Paint buttonPaint = new Paint();
+        buttonPaint.setColor(Color.DKGRAY);
+
+        Paint buttonTextPaint = new Paint();
+        buttonTextPaint.setColor(Color.WHITE);
+        buttonTextPaint.setTextSize(80);
+        buttonTextPaint.setTextAlign(Paint.Align.CENTER);
+
+        int buttonWidth = screenWidth / 6;
+        int buttonHeight = 100;
+
+        // Button for Accept
+        backButton = new Rect(50, 50, 50 + buttonWidth, 50 + buttonHeight);
+        canvas.drawRect(backButton, buttonPaint);
+        canvas.drawText("Accept", 50 + buttonWidth / 2, 50 + buttonHeight / 2 + 25, buttonTextPaint);
+
+        // Button for Sound On/Off
+        int centerX = screenWidth / 2;
+        int topY = 250;
+        buttonSoundOnOFF = new Rect(
+                centerX - buttonWidth / 2,
+                topY,
+                centerX + buttonWidth / 2,
+                topY + buttonHeight
+        );
+        canvas.drawRect(buttonSoundOnOFF, buttonPaint);
+        String soundText = (backgorundVole % 2 == 0) ? "Sound On" : "Sound Off";
+        canvas.drawText(soundText, centerX, topY + buttonHeight / 2 + 25, buttonTextPaint);
+    }
+
+    private Bitmap blurBitmap(Bitmap bitmap) {
+        RenderScript rs = RenderScript.create(getContext());
+        Allocation input = Allocation.createFromBitmap(rs, bitmap);
+        Allocation output = Allocation.createTyped(rs, input.getType());
+
+        ScriptIntrinsicBlur blur = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs));
+        blur.setRadius(15f);
+        blur.setInput(input);
+        blur.forEach(output);
+
+        output.copyTo(bitmap);
+        rs.destroy();
+        return bitmap;
+    }
+
+
 
     public void startLoadingAnimation() {
         loadingHandler.post(loadingRunnable);
@@ -1228,11 +1375,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastTouchTime < doubleTapThreshold && !isInMenu && !isGamePaused && !isLoad && !isPersonScreenVisible && !isDoubleTapProcessed) {
-                // Обнаружено двойное касание во время игры
+            if (currentTime - lastTouchTime < doubleTapThreshold && !isInMenu && !isGamePaused && !isLoad && !isPersonScreenVisible && !isSettingsScreenVisible && !isDoubleTapProcessed) {
                 headState = (headState == 0) ? 1 : 0;
                 updatePlayerHead();
-                Log.i("GameView", "Head changed during gameplay to state: " + headState);
                 isDoubleTapProcessed = true;
                 lastTouchTime = 0;
                 invalidate();
@@ -1241,12 +1386,40 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             lastTouchTime = currentTime;
             isDoubleTapProcessed = false;
 
+            if (isSettingsScreenVisible) {
+                if (backButton != null && backButton.contains((int) touchX, (int) touchY)) {
+                    isSettingsScreenVisible = false;
+                    invalidate();
+                    return true;
+                }
+                if (buttonSoundOnOFF != null && buttonSoundOnOFF.contains((int) touchX, (int) touchY)) {
+                    backgorundVole += 1;
+                    if (backgorundVole % 2 == 0) {
+                        MainActivity.backgorund_voice.start();
+                    } else {
+                        MainActivity.backgorund_voice.pause();
+                    }
+                    SurfaceHolder holder = getHolder();
+                    Canvas canvas = null;
+                    try {
+                        canvas = holder.lockCanvas();
+                        if (canvas != null) {
+                            drawSettingsScreen(canvas);
+                        }
+                    } finally {
+                        if (canvas != null) {
+                            holder.unlockCanvasAndPost(canvas);
+                        }
+                    }
+                    return true;
+                }
+            }
+
             if (isPersonScreenVisible) {
                 if (backButton != null && backButton.contains((int) touchX, (int) touchY)) {
                     isPersonScreenVisible = false;
-                    // Обновляем голову игрока перед возвратом в игру
                     updatePlayerHead();
-                    player.updateHeadImage(); // Убедимся, что Player тоже обновляет свою голову
+                    player.updateHeadImage();
                     invalidate();
                     return true;
                 }
@@ -1270,7 +1443,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     return true;
                 }
                 if (rightButton != null && rightButton.contains((int) touchX, (int) touchY)) {
-                    Log.i("PersonSwitch", "Right");
                     headState = (headState == 0) ? 1 : 0;
                     updatePlayerHead();
                     if (currentHeadBitmap != null) {
@@ -1291,9 +1463,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
 
-            if (isGamePaused && !isPersonScreenVisible) {
+            if (isGamePaused && !isPersonScreenVisible && !isSettingsScreenVisible) {
                 if (menuButton != null && menuButton.contains((int) touchX, (int) touchY)) {
-                    Log.i("Menu", "MENUUUU");
                     goToMenu();
                     return true;
                 }
@@ -1313,13 +1484,28 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     }
                     return true;
                 }
+                if (settingsButton != null && settingsButton.contains((int) touchX, (int) touchY)) {
+                    isSettingsScreenVisible = true;
+                    SurfaceHolder holder = getHolder();
+                    Canvas canvas = null;
+                    try {
+                        canvas = holder.lockCanvas();
+                        if (canvas != null) {
+                            drawSettingsScreen(canvas);
+                        }
+                    } finally {
+                        if (canvas != null) {
+                            holder.unlockCanvasAndPost(canvas);
+                        }
+                    }
+                    return true;
+                }
             }
 
             if (isInMenu && levelButtons != null) {
                 for (int i = 0; i < levelButtons.length; i++) {
                     if (levelButtons[i].contains((int) touchX, (int) touchY)) {
                         int selectedLevel = i + 1;
-                        Log.i("level", "LvL " + selectedLevel);
                         isMenuVisible = false;
                         isInMenu = false;
                         isLoad = true;
@@ -1338,7 +1524,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 return true;
             }
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
-            if (!isInMenu && !isGamePaused && !isLoad) {
+            if (!isInMenu && !isGamePaused && !isLoad && !isPersonScreenVisible && !isSettingsScreenVisible) {
                 playerController.stopLeft();
                 playerController.stopRight();
                 return true;
@@ -1347,16 +1533,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return super.onTouchEvent(event);
     }
 
+
+
     private void updatePlayerHead() {
-        player.updateHeadImage(); // Убедимся, что Player обновляет свою голову
+        player.updateHeadImage();
         float scaleFactor = 1.0f;
-        currentHeadBitmap = player.headImage; // Используем голову из Player
+        currentHeadBitmap = player.headImage;
         if (currentHeadBitmap == null) {
-            Log.e("GameView", "Failed to update player head");
         } else {
             currentHeadBitmap = Bitmap.createScaledBitmap(currentHeadBitmap, (int) (425 * scaleFactor), (int) (421 * scaleFactor), true);
         }
-        invalidate(); // Перерисовываем экран
+        invalidate();
     }
 
     private class LoadLevelTask extends AsyncTask<Integer, Void, Void> {

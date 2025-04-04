@@ -24,7 +24,7 @@ public class PlayerController {
     }
 
     public void stopLeft() {
-        MainActivity.run_voice.pause(); // Замена stop() на pause()
+        MainActivity.run_voice.pause();
         player.setMovingLeft(false);
     }
 
@@ -36,7 +36,7 @@ public class PlayerController {
     }
 
     public void stopRight() {
-        MainActivity.run_voice.pause(); // Замена stop() на pause()
+        MainActivity.run_voice.pause();
         player.setMovingRight(false);
     }
 
