@@ -1132,7 +1132,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
 
         Paint textPaint = new Paint();
-        textPaint.setColor(Color.BLACK);
+        textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(100);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setFakeBoldText(true);
@@ -1199,7 +1199,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         titlePaint.setTextSize(100);
         titlePaint.setTextAlign(Paint.Align.CENTER);
         titlePaint.setFakeBoldText(true);
-        canvas.drawText("Person Settings", screenWidth / 2, 150, titlePaint);
+//        canvas.drawText("Person Settings", screenWidth / 2, 150, titlePaint);
 
         if (bodyBitmap != null) {
             int bodyWidth = bodyBitmap.getWidth();
@@ -1235,7 +1235,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             int buttonWidth = screenWidth / 6;
             int buttonHeight = 100;
 
-            canvas.drawRect(backButton, buttonPaint);
+            if (backButton != null) {
+                canvas.drawRect(backButton, buttonPaint);
+            } else {
+                // Optionally log an error or set a default Rect
+                backButton = new Rect(50, 50, 50 + buttonWidth, 50 + buttonHeight);
+                canvas.drawRect(backButton, buttonPaint);
+            }
             canvas.drawText("Accept", 50 + buttonWidth / 2, 50 + buttonHeight / 2 + 25, buttonTextPaint);
 
             leftButton = new Rect(
@@ -1257,7 +1263,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawText("Right", rightButton.centerX(), rightButton.centerY() + 25, buttonTextPaint);
         }
     }
-
     private void drawSettingsScreen(Canvas canvas) {
         Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
 
@@ -1277,7 +1282,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         canvas.drawBitmap(scaledBackground, offsetX, offsetY, null);
 
         Paint titlePaint = new Paint();
-        titlePaint.setColor(Color.BLACK);
+        titlePaint.setColor(Color.WHITE);
         titlePaint.setTextSize(100);
         titlePaint.setTextAlign(Paint.Align.CENTER);
         titlePaint.setFakeBoldText(true);
@@ -1475,7 +1480,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     try {
                         canvas = holder.lockCanvas();
                         if (canvas != null) {
-                            drawPersonScreen(canvas);
+                            drawPersonScreen(canvas); // This is where the crash happens
                         }
                     } finally {
                         if (canvas != null) {
