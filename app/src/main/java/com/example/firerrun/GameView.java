@@ -1238,7 +1238,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             if (backButton != null) {
                 canvas.drawRect(backButton, buttonPaint);
             } else {
-                // Optionally log an error or set a default Rect
                 backButton = new Rect(50, 50, 50 + buttonWidth, 50 + buttonHeight);
                 canvas.drawRect(backButton, buttonPaint);
             }
@@ -1380,14 +1379,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastTouchTime < doubleTapThreshold && !isInMenu && !isGamePaused && !isLoad && !isPersonScreenVisible && !isSettingsScreenVisible && !isDoubleTapProcessed) {
-                headState = (headState == 0) ? 1 : 0;
-                updatePlayerHead();
-                isDoubleTapProcessed = true;
-                lastTouchTime = 0;
-                invalidate();
-                return true;
-            }
             lastTouchTime = currentTime;
             isDoubleTapProcessed = false;
 
@@ -1480,7 +1471,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     try {
                         canvas = holder.lockCanvas();
                         if (canvas != null) {
-                            drawPersonScreen(canvas); // This is where the crash happens
+                            drawPersonScreen(canvas);
                         }
                     } finally {
                         if (canvas != null) {
@@ -1519,24 +1510,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         return true;
                     }
                 }
-            } else if (!isGamePaused && !isLoad) {
-                if (touchX < getWidth() / 2) {
-                    playerController.moveLeft();
-                } else {
-                    playerController.moveRight();
-                    shoot();
-                }
-                return true;
             }
+
+            return true;
+
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
-            if (!isInMenu && !isGamePaused && !isLoad && !isPersonScreenVisible && !isSettingsScreenVisible) {
-                playerController.stopLeft();
-                playerController.stopRight();
-                return true;
-            }
+            return true;
         }
         return super.onTouchEvent(event);
     }
+
 
 
 
