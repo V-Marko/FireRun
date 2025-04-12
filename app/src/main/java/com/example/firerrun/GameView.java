@@ -6,9 +6,12 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -1183,85 +1186,145 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         int screenHeight = getHeight();
 
         float scale = (float) screenWidth / background.getWidth();
-        int newWidth = Math.round(background.getWidth() * scale);
-        int newHeight = Math.round(background.getHeight() * scale);
-
-        Bitmap scaledBackground = Bitmap.createScaledBitmap(background, newWidth, newHeight, true);
+        Bitmap scaledBackground = Bitmap.createScaledBitmap(background,
+                Math.round(background.getWidth() * scale),
+                Math.round(background.getHeight() * scale), true);
         scaledBackground = blurBitmap(scaledBackground);
 
-        int offsetX = 0;
-        int offsetY = screenHeight - newHeight;
+        Paint overlayPaint = new Paint();
+        overlayPaint.setColor(Color.argb(200, 0, 0, 0));
+        canvas.drawRect(0, 0, screenWidth, screenHeight, overlayPaint);
 
-        canvas.drawBitmap(scaledBackground, offsetX, offsetY, null);
-
-        Paint titlePaint = new Paint();
-        titlePaint.setColor(Color.BLACK);
-        titlePaint.setTextSize(100);
-        titlePaint.setTextAlign(Paint.Align.CENTER);
-        titlePaint.setFakeBoldText(true);
-//        canvas.drawText("Person Settings", screenWidth / 2, 150, titlePaint);
+        canvas.drawBitmap(scaledBackground, 0, screenHeight - scaledBackground.getHeight(), null);
 
         if (bodyBitmap != null) {
             int bodyWidth = bodyBitmap.getWidth();
             int bodyHeight = bodyBitmap.getHeight();
-            float bodyX = (screenWidth - bodyWidth) / 2f;
-            float bodyY = screenHeight - bodyHeight - 50f;
-            canvas.drawBitmap(bodyBitmap, bodyX, bodyY, null);
+            float bodyX = (screenWidth - bodyWidth * 0.7f) / 2f;
+            float bodyY = screenHeight / 2 - bodyHeight * 0.7f / 2 + 70f;
+
+            Paint platformPaint = new Paint();
+            platformPaint.setColor(Color.argb(150, 70, 70, 70));
+            platformPaint.setShadowLayer(20, 0, 10, Color.BLACK);
+            float platformPadding = 50;
+            canvas.drawRoundRect(
+                    new RectF(
+                            bodyX - platformPadding,
+                            bodyY + bodyHeight * 0.7f - 30,
+                            bodyX + bodyWidth * 0.7f + platformPadding,
+                            bodyY + bodyHeight * 0.7f + 30
+                    ), 20, 20, platformPaint);
+
+            Paint shadowPaint = new Paint();
+            shadowPaint.setColor(Color.argb(100, 0, 0, 0));
+            canvas.drawOval(
+                    new RectF(
+                            bodyX - 30,
+                            bodyY + bodyHeight * 0.7f - 20,
+                            bodyX + bodyWidth * 0.7f + 30,
+                            bodyY + bodyHeight * 0.7f + 20
+                    ), shadowPaint);
+
+            canvas.drawBitmap(bodyBitmap, null, new RectF(bodyX, bodyY, bodyX + bodyWidth * 0.7f, bodyY + bodyHeight * 0.7f), null);
 
             if (currentHeadBitmap != null) {
                 int headWidth = currentHeadBitmap.getWidth();
                 int headHeight = currentHeadBitmap.getHeight();
-                float headX = (screenWidth - headWidth) / 2f;
-                float headY = bodyY - headHeight + 50f;
-                canvas.drawBitmap(currentHeadBitmap, headX, headY, null);
+                float headX = (screenWidth - headWidth * 0.7f) / 2f;
+                float headY = bodyY - headHeight * 0.7f + 50f;
+                canvas.drawBitmap(currentHeadBitmap, null, new RectF(headX, headY, headX + headWidth * 0.7f, headY + headHeight * 0.7f), null);
             }
 
             if (gunBitmap != null) {
                 int gunWidth = gunBitmap.getWidth();
                 int gunHeight = gunBitmap.getHeight();
-                float gunX = (screenWidth - gunWidth) / 2f + 90;
-                float gunY = bodyY + (bodyHeight / 2f) - (gunHeight / 2f) - 170f;
-                canvas.drawBitmap(gunBitmap, gunX, gunY, null);
+                float gunX = (screenWidth - gunWidth * 0.7f) / 2f + 70;
+                float gunY = bodyY + (bodyHeight * 0.7f / 2f) - (gunHeight * 0.7f / 2f) - 100f;
+                canvas.drawBitmap(gunBitmap, null, new RectF(gunX, gunY, gunX + gunWidth * 0.7f, gunY + gunHeight * 0.7f), null);
             }
 
             Paint buttonPaint = new Paint();
-            buttonPaint.setColor(Color.DKGRAY);
+            buttonPaint.setColor(Color.argb(200, 50, 50, 50));
+            buttonPaint.setShadowLayer(15, 0, 5, Color.BLACK);
 
             Paint buttonTextPaint = new Paint();
             buttonTextPaint.setColor(Color.WHITE);
-            buttonTextPaint.setTextSize(80);
+            buttonTextPaint.setTextSize(60);
             buttonTextPaint.setTextAlign(Paint.Align.CENTER);
+            buttonTextPaint.setFakeBoldText(true);
 
-            int buttonWidth = screenWidth / 6;
-            int buttonHeight = 100;
+            int backButtonWidth = screenWidth / 4;
+            int backButtonHeight = 120;
+            backButton = new Rect(
+                    screenWidth / 2 - backButtonWidth / 2,
+                    screenHeight - backButtonHeight - 50,
+                    screenWidth / 2 + backButtonWidth / 2,
+                    screenHeight - 50
+            );
 
-            if (backButton != null) {
-                canvas.drawRect(backButton, buttonPaint);
-            } else {
-                backButton = new Rect(50, 50, 50 + buttonWidth, 50 + buttonHeight);
-                canvas.drawRect(backButton, buttonPaint);
-            }
-            canvas.drawText("Accept", 50 + buttonWidth / 2, 50 + buttonHeight / 2 + 25, buttonTextPaint);
+            Paint backButtonPaint = new Paint();
+            backButtonPaint.setShader(new LinearGradient(
+                    0, backButton.top, 0, backButton.bottom,
+                    Color.rgb(80, 80, 80), Color.rgb(50, 50, 50),
+                    Shader.TileMode.CLAMP));
+            canvas.drawRoundRect(
+                    new RectF(backButton), 30, 30, backButtonPaint);
+
+            canvas.drawText("ACCEPT", backButton.centerX(), backButton.centerY() + 20, buttonTextPaint);
+
+            int switchButtonSize = 120;
+            int switchButtonY = (int) (bodyY + bodyHeight * 0.7f / 2 - switchButtonSize / 2);
 
             leftButton = new Rect(
-                    (int) (bodyX - buttonWidth - 20),
-                    (int) (bodyY + bodyHeight / 2 - buttonHeight / 2),
-                    (int) (bodyX - 20),
-                    (int) (bodyY + bodyHeight / 2 + buttonHeight / 2)
+                    screenWidth / 2 - switchButtonSize - 150,
+                    switchButtonY,
+                    screenWidth / 2 - 150,
+                    switchButtonY + switchButtonSize
             );
-            canvas.drawRect(leftButton, buttonPaint);
-            canvas.drawText("Left", leftButton.centerX(), leftButton.centerY() + 25, buttonTextPaint);
+            Paint leftButtonPaint = new Paint();
+            leftButtonPaint.setShader(new LinearGradient(
+                    0, leftButton.top, 0, leftButton.bottom,
+                    Color.rgb(70, 70, 70), Color.rgb(40, 40, 40),
+                    Shader.TileMode.CLAMP));
+            canvas.drawRoundRect(
+                    new RectF(leftButton), 25, 25, leftButtonPaint);
+
+            // "<-"
+            Paint arrowPaint = new Paint();
+            arrowPaint.setColor(Color.WHITE);
+            arrowPaint.setTextSize(80);
+            arrowPaint.setTextAlign(Paint.Align.CENTER);
+            arrowPaint.setFakeBoldText(true);
+            canvas.drawText("←", leftButton.centerX(), leftButton.centerY() + 30, arrowPaint);
 
             rightButton = new Rect(
-                    (int) (bodyX + bodyWidth + 20),
-                    (int) (bodyY + bodyHeight / 2 - buttonHeight / 2),
-                    (int) (bodyX + bodyWidth + buttonWidth + 20),
-                    (int) (bodyY + bodyHeight / 2 + buttonHeight / 2)
+                    screenWidth / 2 + 150,
+                    switchButtonY,
+                    screenWidth / 2 + switchButtonSize + 150,
+                    switchButtonY + switchButtonSize
             );
-            canvas.drawRect(rightButton, buttonPaint);
-            canvas.drawText("Right", rightButton.centerX(), rightButton.centerY() + 25, buttonTextPaint);
+            Paint rightButtonPaint = new Paint();
+            rightButtonPaint.setShader(new LinearGradient(
+                    0, rightButton.top, 0, rightButton.bottom,
+                    Color.rgb(70, 70, 70), Color.rgb(40, 40, 40),
+                    Shader.TileMode.CLAMP));
+            canvas.drawRoundRect(
+                    new RectF(rightButton), 25, 25, rightButtonPaint);
+
+            // "->"
+            canvas.drawText("→", rightButton.centerX(), rightButton.centerY() + 30, arrowPaint);
+
+            String characterName = (headState == 0) ? "SOLDIER" : "NINJA";
+            Paint namePaint = new Paint();
+            namePaint.setColor(Color.WHITE);
+            namePaint.setTextSize(80);
+            namePaint.setTextAlign(Paint.Align.CENTER);
+            namePaint.setFakeBoldText(true);
+            namePaint.setShadowLayer(10, 0, 0, Color.BLACK);
+            canvas.drawText(characterName, screenWidth / 2, 150, namePaint);
         }
     }
+
     private void drawSettingsScreen(Canvas canvas) {
         Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
 

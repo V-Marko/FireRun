@@ -6,7 +6,7 @@ public class PlayerController {
     private Player player;
     private GameView gameView;
     private long lastJumpTime = 0;
-    private final long JUMP_COOLDOWN = 1000;
+    private final long JUMP_COOLDOWN = 0;
 
     public PlayerController(Player player, GameView gameView) {
         this.player = player;
@@ -30,7 +30,6 @@ public class PlayerController {
 
     public void moveRight() {
         MainActivity.run_voice.start();
-
         player.setMovingRight(true);
         player.setMovingLeft(false);
     }
@@ -42,12 +41,9 @@ public class PlayerController {
 
     public void jump() {
         long currentTime = System.currentTimeMillis();
-
-        if (currentTime - lastJumpTime >= JUMP_COOLDOWN) {
-            player.jump();
-            lastJumpTime = currentTime;
-        } else {
-
-        }
+            if (player.isOnGround()) {
+                player.jump();
+                lastJumpTime = currentTime;
+            }
     }
 }

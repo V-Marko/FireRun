@@ -109,6 +109,7 @@ public class Player {
             Log.i("Player", "Head updated to person_head_2");
         }
     }
+
     public void update() {
         float newX = x;
         float newY = y;
@@ -225,10 +226,8 @@ public class Player {
     }
 
     public boolean isOnGround() {
-        boolean groundCondition = (y >= LandRestriction);
         boolean blockCondition = checkBlockCollision(blocks, blockMoveScripts, switches);
-
-        return groundCondition || blockCondition;
+        return blockCondition;
     }
 
     public boolean checkBlockCollision(List<Block> blocks, List<BlockMoveScript> blockMoveScripts, List<Switch> switches) {
