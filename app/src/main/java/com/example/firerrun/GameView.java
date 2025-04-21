@@ -842,8 +842,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         super.draw(canvas);
 
         if (isMenuVisible) {
+            hideGameButtons();
             MenuLevelsFunction(canvas);
             return;
+        }
+        else{
+            showGameButtons();
         }
 
         if (isLoad) {
@@ -965,6 +969,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (isGamePaused && !isPersonScreenVisible) {
             PauseFunction(canvas);
         }
+        else{
+            showGameButtons();
+        }
     }
 
     public Player getPlayer() {
@@ -1058,6 +1065,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void PauseFunction(Canvas canvas) {
+
+        hideGameButtons();
+
         Paint backgroundPaint = new Paint();
         backgroundPaint.setColor(Color.argb(180, 0, 0, 0));
         canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
@@ -1114,6 +1124,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void MenuLevelsFunction(Canvas canvas) {
+
         Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
         int screenWidth = getWidth();
         int screenHeight = getHeight();
@@ -1448,6 +1459,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             if (isSettingsScreenVisible) {
                 if (backButton != null && backButton.contains((int) touchX, (int) touchY)) {
                     isSettingsScreenVisible = false;
+                    showGameButtons();
                     invalidate();
                     return true;
                 }
@@ -1479,6 +1491,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     isPersonScreenVisible = false;
                     updatePlayerHead();
                     player.updateHeadImage();
+                    showGameButtons();
                     invalidate();
                     return true;
                 }
@@ -1529,6 +1542,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
                 if (personButton != null && personButton.contains((int) touchX, (int) touchY)) {
                     isPersonScreenVisible = true;
+                    hideGameButtons();
                     SurfaceHolder holder = getHolder();
                     Canvas canvas = null;
                     try {
@@ -1545,6 +1559,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
                 if (settingsButton != null && settingsButton.contains((int) touchX, (int) touchY)) {
                     isSettingsScreenVisible = true;
+                    hideGameButtons();
                     SurfaceHolder holder = getHolder();
                     Canvas canvas = null;
                     try {
@@ -1582,6 +1597,37 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         return super.onTouchEvent(event);
     }
+
+    private void hideGameButtons() {
+        ((Activity) getContext()).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                MainActivity.btnLeft.setVisibility(View.GONE);
+                MainActivity.btnRight.setVisibility(View.GONE);
+                MainActivity.btnJump.setVisibility(View.GONE);
+                MainActivity.btnShoot.setVisibility(View.GONE);
+                MainActivity.btnUse.setVisibility(View.GONE);
+//                MainActivity.btnPause.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    private void showGameButtons() {
+        ((Activity) getContext()).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                MainActivity.btnLeft.setVisibility(View.VISIBLE);
+                MainActivity.btnRight.setVisibility(View.VISIBLE);
+                MainActivity.btnJump.setVisibility(View.VISIBLE);
+                MainActivity.btnShoot.setVisibility(View.VISIBLE);
+                MainActivity.btnUse.setVisibility(View.GONE);
+//                MainActivity.btnPause.setVisibility(View.VISIBLE);
+
+            }
+        });
+    }
+
+
 
 
 
