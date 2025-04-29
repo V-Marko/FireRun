@@ -34,9 +34,9 @@ import java.util.List;
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public static int headState = 0;
 
-
     //Volse
     private int backgorundVole = 0;
+
 
 
     private boolean isInMenu = true;
@@ -98,6 +98,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final long dropInterval = 2000;
 
     private int loadingDotsCount = 0;
+
+    private final String[] loadingTips = {
+            "Tip: Jump to avoid obstacles!",
+            "Tip: Shoot enemies to clear your path!",
+            "Tip: Collect speed boosts to move faster!",
+            "Tip: Watch out for moving walls!",
+            "Tip: Use switches to unlock new paths!",
+            "Tip: Stay alert for falling stones!"
+    };
+    private int currentTipIndex = 0;
+    private final long tipChangeInterval = 2000;
+    private long lastTipChangeTime = 0;
 
     private final Handler loadingHandler = new Handler(Looper.getMainLooper());
     private final Runnable loadingRunnable = new Runnable() {
@@ -1410,6 +1422,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
 
     public void startLoadingAnimation() {
+        currentTipIndex = 0;
+        lastTipChangeTime = System.currentTimeMillis();
         loadingHandler.post(loadingRunnable);
     }
 
@@ -1428,7 +1442,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         textPaint.setTextAlign(Paint.Align.CENTER);
 
         String loadingText = "Loading" + getDots(loadingDotsCount);
-        canvas.drawText(loadingText, getWidth() / 2, getHeight() / 2, textPaint);
+        canvas.drawText(loadingText, getWidth() / 2, getHeight() / 2 - 50, textPaint);
+
+        textPaint.setTextSize(60);
+        canvas.drawText(loadingTips[currentTipIndex], getWidth() / 2, getHeight() / 2 + 50, textPaint);
+
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastTipChangeTime >= tipChangeInterval) {
+            currentTipIndex = (currentTipIndex + 1) % loadingTips.length;
+            lastTipChangeTime = currentTime;
+        }
 
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
@@ -1437,7 +1460,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }, 500);
     }
-
     private String getDots(int count) {
         StringBuilder dots = new StringBuilder();
         for (int i = 0; i < count; i++) {

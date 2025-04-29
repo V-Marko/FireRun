@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.util.Log;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class SwitchCader {
     }
 
     public void updateCader() {
-        float threshold = screenSize / 2;//TODO: cader switch size
+        float threshold = screenSize / 4; //TODO: cader switch size
         float playerX = player.getX();
 
         if (isAnimating) {
@@ -108,6 +109,7 @@ public class SwitchCader {
                 isAnimating = false;
                 isCameraMoving = false;
                 lastOffset = 0;
+                Log.d("SwitchCader", "Animation ended, lastOffset reset to 0");
             }
         });
 
