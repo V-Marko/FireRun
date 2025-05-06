@@ -8,6 +8,8 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.Log;
 
+import java.util.concurrent.RecursiveTask;
+
 public class TurentScript {
     public float x;
     public float y;
@@ -165,5 +167,19 @@ public class TurentScript {
 
     public boolean isAlive() {
         return lives > 0;
+    }
+
+    public float getX() {
+        return x;
+    }
+    public float getY(){
+        return y;
+    }
+
+    public float getWidth() {
+        return width;
+    }
+    public float getHeight() {
+        return height;
     }
 }

@@ -47,4 +47,19 @@ public class TurretBullet {
     public float getY() {
         return y;
     }
+
+    public float getVx() {
+        return vx;
+    }
+
+    public float getVy() {
+        return vy;
+    }
+
+    public void reset(float x, float y, float vx, float vy) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+    }
 }

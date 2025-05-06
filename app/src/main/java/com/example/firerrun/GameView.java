@@ -857,8 +857,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             hideGameButtons();
             MenuLevelsFunction(canvas);
             return;
-        }
-        else{
+        } else {
             showGameButtons();
         }
 
@@ -880,6 +879,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawBitmap(background, 0, 0, null);
         }
 
+        // Отрисовка всех игровых элементов
         for (BlockMoveScript blockMove : blockMoveScripts) {
             blockMove.draw(canvas);
         }
@@ -978,10 +978,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             block.draw(canvas);
         }
 
+        Paint levelPaint = new Paint();
+        levelPaint.setColor(Color.WHITE);
+        levelPaint.setTextSize(60);
+        levelPaint.setTextAlign(Paint.Align.LEFT);
+        levelPaint.setFakeBoldText(true);
+        levelPaint.setShadowLayer(5, 0, 0, Color.BLACK);
+        canvas.drawText("Level: " + level, getWidth()/2, 80, levelPaint);
+
         if (isGamePaused && !isPersonScreenVisible) {
             PauseFunction(canvas);
-        }
-        else{
+        } else {
             showGameButtons();
         }
     }
@@ -1035,7 +1042,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         @Override
         public void run() {
             long lastTime = System.nanoTime();
-            double nsPerUpdate = 1_000_000_000.0 / 60.0;
+            double nsPerUpdate = 1_000_000_000.0 / 120.0;
             double delta = 0;
 
             while (running) {
