@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -482,14 +483,23 @@ public class Player {
         }
     }
 
+    public boolean checkSwitchCollision(List<Switch> switches) {
+        for (Switch switchObj : switches) {
+            if (switchObj.checkCollision(this)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void PlayerFinishAnimation() {
         ((Activity) context).runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Button btnLeft = MainActivity.btnLeft;
-                Button btnRight = MainActivity.btnRight;
-                Button btnJump = MainActivity.btnJump;
-                Button btnShoot = MainActivity.btnShoot;
+                ImageButton btnLeft = MainActivity.btnLeft;
+                ImageButton btnRight = MainActivity.btnRight;
+                ImageButton btnJump = MainActivity.btnJump;
+                ImageButton btnShoot = MainActivity.btnShoot;
 
                 btnLeft.setVisibility(View.GONE);
                 btnRight.setVisibility(View.GONE);

@@ -8,11 +8,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
-import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
@@ -21,6 +19,7 @@ import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicBlur;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -38,6 +37,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private int backgorundVole = 0;
 
 
+    private boolean isUseButtonVisible = false;
 
     private boolean isInMenu = true;
     public int level = 1;
@@ -51,6 +51,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private BadBox badBox;
     private Rect personButton;
     private boolean isPersonScreenVisible = false;
+
+
+    private boolean wasNearSwitch = false; // Add this class field
 
     private Rect backButton;
     private Rect buttonSoundOnOFF;
@@ -132,6 +135,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final long doubleTapThreshold = 300;
     private boolean isDoubleTapProcessed = false;
     private Rect settingsButton;
+    private boolean isOnBlock;
 
     public boolean isGamePaused() {
         return isGamePaused;
@@ -468,6 +472,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+
+    private int btnUseHideDelay = 0;
+    private final int HIDE_DELAY_FRAMES = 30; // Задержка в 0.5 сек при 60 FPS
+
     public void update() {
         if (isGamePaused) return;
 
@@ -508,18 +516,24 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         boolean isNearSwitch = false;
         for (Switch switchObj : switches) {
             switchObj.update();
-            if (switchObj.checkCollision(player)) {
+            if (!switchObj.isActivated() && switchObj.checkCollision(player)) {
                 isNearSwitch = true;
+                btnUseHideDelay = 0;
                 break;
             }
         }
 
-        final boolean shouldShowButton = isNearSwitch;
-        ((Activity) getContext()).runOnUiThread(() -> {
-            MainActivity.btnUse.setVisibility(shouldShowButton ? View.VISIBLE : View.GONE);
-        });
+        final boolean shouldShowButton = isNearSwitch || btnUseHideDelay < HIDE_DELAY_FRAMES;
+        if (!isNearSwitch) {
+            btnUseHideDelay++;
+        }
 
-        boolean isOnBlock = player.checkBlockCollision(blockList, blockMoveScripts, switches);
+        if (shouldShowButton != isUseButtonVisible) {
+            isUseButtonVisible = shouldShowButton;
+            ((Activity) getContext()).runOnUiThread(() -> {
+                MainActivity.btnUse.setVisibility(isUseButtonVisible ? View.VISIBLE : View.GONE);
+            });
+        }
 
         if (!isOnBlock && !player.jumping) {
             player.y += player.jumpSpeed;
@@ -1019,6 +1033,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     public int getLevel() {
         return level;
+    }
+
+    public void activateSwitch() {
+        for (Switch switchObj : switches) {
+            if (!switchObj.isActivated() && switchObj.checkCollision(player)) {
+                switchObj.activate();
+                btnUseHideDelay = HIDE_DELAY_FRAMES;
+                ((Activity) getContext()).runOnUiThread(() -> {
+                    MainActivity.btnUse.setVisibility(View.GONE);
+                });
+                break;
+            }
+        }
     }
 
     class GameThread extends Thread {
@@ -1649,9 +1676,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 MainActivity.btnRight.setVisibility(View.VISIBLE);
                 MainActivity.btnJump.setVisibility(View.VISIBLE);
                 MainActivity.btnShoot.setVisibility(View.VISIBLE);
-                MainActivity.btnUse.setVisibility(View.GONE);
-//                MainActivity.btnPause.setVisibility(View.VISIBLE);
-
+                // Убрана установка видимости для btnUse, так как она управляется в update()
+                // MainActivity.btnPause.setVisibility(View.VISIBLE);
             }
         });
     }

@@ -53,7 +53,6 @@ public class Switch {
                 matrix.postTranslate(x + width, y);
                 canvas.drawBitmap(switchImage, matrix, null);
             } else {
-                // Обычная отрисовка
                 canvas.drawBitmap(switchImage, x, y, null);
             }
         }
@@ -63,12 +62,12 @@ public class Switch {
     }
 
     public boolean checkCollision(Player player) {
-        return player.getX() + player.getWidth() > x &&
-                player.getX() < x + width &&
-                player.getY() + player.getHeight() > y &&
-                player.getY() < y + height;
+        float padding = 50f;
+        return player.getX() + player.getWidth() > x - padding &&
+                player.getX() < x + width + padding &&
+                player.getY() + player.getHeight() > y - padding &&
+                player.getY() < y + height + padding;
     }
-
     public void activate() {
         if (!isActivated && !isAnimating) {
             isActivated = true;
