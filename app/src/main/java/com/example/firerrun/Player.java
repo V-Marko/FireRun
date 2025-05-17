@@ -32,7 +32,7 @@ public class Player {
     private boolean movingRight;
     boolean jumping;
     private boolean isIdle;
-    public float jumpSpeed = 10;
+    public float jumpSpeed = 5;
     public Bitmap bodyImage;
     public Bitmap headImage;
     public Bitmap gunImage;
@@ -54,9 +54,9 @@ public class Player {
 
     public static boolean isFacingLeft;
 
-    private float initialJumpSpeed = -9.5f;
-    float gravity = 0.38f;
-    private float maxJumpHeight = 4.75f;
+    private float initialJumpSpeed = -8.5f;
+    float gravity = 0.2f;
+    private float maxJumpHeight = 3.0f;
 
     private float currentJumpHeight = 0f;
     private Animation animation;

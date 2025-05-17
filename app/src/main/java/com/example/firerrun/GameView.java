@@ -36,6 +36,22 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     //Volse
     private int backgorundVole = 0;
 
+    private float shootVolume = 100f;
+    private RectF shootVolumeSliderTrack;
+    private RectF shootVolumeSliderHandle;
+    private boolean isDraggingShootSlider = false;
+
+
+    private float walkVolume = 100f;
+    private RectF walkVolumeSliderTrack;
+    private RectF walkVolumeSliderHandle;
+    private boolean isDraggingWalkSlider = false;
+
+    private float backgroundMusicVolume = 100f;
+    private RectF backgroundMusicVolumeSliderTrack;
+    private RectF backgroundMusicVolumeSliderHandle;
+    private boolean isDraggingBackgroundMusicSlider = false;
+
 
     private boolean isUseButtonVisible = false;
 
@@ -53,7 +69,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean isPersonScreenVisible = false;
 
 
-    private boolean wasNearSwitch = false; // Add this class field
+    private float backgroundVolume = 100f;
+    private RectF volumeSliderTrack;
+    private RectF volumeSliderHandle;
+    private boolean isDraggingSlider = false;
+
+
+    private boolean wasNearSwitch = false;
 
     private Rect backButton;
     private Rect buttonSoundOnOFF;
@@ -474,7 +496,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
 
     private int btnUseHideDelay = 0;
-    private final int HIDE_DELAY_FRAMES = 30; // Задержка в 0.5 сек при 60 FPS
+    private final int HIDE_DELAY_FRAMES = 30;
 
     public void update() {
         if (isGamePaused) return;
@@ -893,7 +915,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawBitmap(background, 0, 0, null);
         }
 
-        // Отрисовка всех игровых элементов
         for (BlockMoveScript blockMove : blockMoveScripts) {
             blockMove.draw(canvas);
         }
@@ -1170,7 +1191,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void MenuLevelsFunction(Canvas canvas) {
-
         Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
         int screenWidth = getWidth();
         int screenHeight = getHeight();
@@ -1206,15 +1226,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         buttonTextPaint.setTextSize(60);
         buttonTextPaint.setTextAlign(Paint.Align.CENTER);
 
-        int buttonWidth = getWidth() / 4;
+        int buttonWidth = (getWidth() / 5) + 50;
         int buttonHeight = 120;
         int padding = 20;
+
+        int horizontalPadding = 30;
 
         int columns = 4;
         int rows = 3;
 
-        int totalWidth = columns * (buttonWidth + padding * 2) - padding * 2;
-        int totalHeight = rows * (buttonHeight + padding) - padding;
+        int totalWidth = columns * buttonWidth + (columns - 1) * padding * 2;
+        int totalHeight = rows * buttonHeight + (rows - 1) * padding;
 
         int startX = (getWidth() - totalWidth) / 2;
         int startY = (getHeight() - totalHeight) / 2;
@@ -1235,6 +1257,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawRect(levelButtons[i], buttonPaint);
 
             canvas.drawText("Level " + (i + 1), x + buttonWidth / 2, y + buttonHeight / 2 + 20, buttonTextPaint);
+        }
+
+        if (startX < horizontalPadding) {
+            startX = horizontalPadding;
+        }
+        if (startX + totalWidth > getWidth() - horizontalPadding) {
+            startX = getWidth() - totalWidth - horizontalPadding;
         }
     }
     private void drawPersonScreen(Canvas canvas) {
@@ -1381,10 +1410,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawText(characterName, screenWidth / 2, 150, namePaint);
         }
     }
-
     private void drawSettingsScreen(Canvas canvas) {
         Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
-
         int screenWidth = getWidth();
         int screenHeight = getHeight();
 
@@ -1397,7 +1424,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         int offsetX = 0;
         int offsetY = screenHeight - newHeight;
-
         canvas.drawBitmap(scaledBackground, offsetX, offsetY, null);
 
         Paint titlePaint = new Paint();
@@ -1405,7 +1431,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         titlePaint.setTextSize(100);
         titlePaint.setTextAlign(Paint.Align.CENTER);
         titlePaint.setFakeBoldText(true);
-
         canvas.drawText("Settings", screenWidth / 2, 150, titlePaint);
 
         Paint buttonPaint = new Paint();
@@ -1418,25 +1443,91 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         int buttonWidth = screenWidth / 6;
         int buttonHeight = 100;
-
-        // Button for Accept
         backButton = new Rect(50, 50, 50 + buttonWidth, 50 + buttonHeight);
         canvas.drawRect(backButton, buttonPaint);
         canvas.drawText("Accept", 50 + buttonWidth / 2, 50 + buttonHeight / 2 + 25, buttonTextPaint);
 
-        // Button for Sound On/Off
+        Paint sliderTrackPaint = new Paint();
+        sliderTrackPaint.setColor(Color.GRAY);
+        Paint sliderHandlePaint = new Paint();
+        sliderHandlePaint.setColor(Color.WHITE);
+        Paint sliderTextPaint = new Paint();
+        sliderTextPaint.setColor(Color.WHITE);
+        sliderTextPaint.setTextSize(60);
+        sliderTextPaint.setTextAlign(Paint.Align.CENTER);
+
+        int sliderWidth = screenWidth / 5;
+        int sliderHeight = 50;
         int centerX = screenWidth / 2;
         int topY = 250;
-        buttonSoundOnOFF = new Rect(
-                centerX - buttonWidth / 2,
+
+        backgroundMusicVolumeSliderTrack = new RectF(
+                centerX - sliderWidth / 2,
                 topY,
-                centerX + buttonWidth / 2,
-                topY + buttonHeight
+                centerX + sliderWidth / 2,
+                topY + sliderHeight
         );
-        canvas.drawRect(buttonSoundOnOFF, buttonPaint);
-        String soundText = (backgorundVole % 2 == 0) ? "Sound On" : "Sound Off";
-        canvas.drawText(soundText, centerX, topY + buttonHeight / 2 + 25, buttonTextPaint);
+
+        canvas.drawRoundRect(backgroundMusicVolumeSliderTrack, 20, 20, sliderTrackPaint);
+
+        float backgroundMusicSliderRange = backgroundMusicVolumeSliderTrack.width();
+        float backgroundMusicHandleX = backgroundMusicVolumeSliderTrack.left + (backgroundMusicVolume / 100f) * backgroundMusicSliderRange;
+        float backgroundMusicHandleY = backgroundMusicVolumeSliderTrack.centerY();
+
+        RectF backgroundMusicHandleRect = new RectF(
+                backgroundMusicHandleX - 40, backgroundMusicHandleY - 40,
+                backgroundMusicHandleX + 40, backgroundMusicHandleY + 40
+        );
+        canvas.drawRoundRect(backgroundMusicHandleRect, 50, 50, sliderHandlePaint);
+
+        canvas.drawText("Background Music Volume", centerX, topY - 20, sliderTextPaint);
+
+        int shootSliderY = topY + 100;
+        shootVolumeSliderTrack = new RectF(
+                centerX - sliderWidth / 2,
+                shootSliderY,
+                centerX + sliderWidth / 2,
+                shootSliderY + sliderHeight
+        );
+
+        canvas.drawRoundRect(shootVolumeSliderTrack, 20, 20, sliderTrackPaint);
+
+        float shootSliderRange = shootVolumeSliderTrack.width();
+        float shootHandleX = shootVolumeSliderTrack.left + (shootVolume / 100f) * shootSliderRange;
+        float shootHandleY = shootVolumeSliderTrack.centerY();
+
+        RectF shootHandleRect = new RectF(
+                shootHandleX - 40, shootHandleY - 40,
+                shootHandleX + 40, shootHandleY + 40
+        );
+        canvas.drawRoundRect(shootHandleRect, 50, 50, sliderHandlePaint);
+
+        canvas.drawText("Shoot Volume", centerX, shootSliderY - 20, sliderTextPaint);
+
+        int walkSliderY = shootSliderY + 100;
+        walkVolumeSliderTrack = new RectF(
+                centerX - sliderWidth / 2,
+                walkSliderY,
+                centerX + sliderWidth / 2,
+                walkSliderY + sliderHeight
+        );
+
+        canvas.drawRoundRect(walkVolumeSliderTrack, 20, 20, sliderTrackPaint);
+
+        float walkSliderRange = walkVolumeSliderTrack.width();
+        float walkHandleX = walkVolumeSliderTrack.left + (walkVolume / 100f) * walkSliderRange;
+        float walkHandleY = walkVolumeSliderTrack.centerY();
+
+        RectF walkHandleRect = new RectF(
+                walkHandleX - 40, walkHandleY - 40,
+                walkHandleX + 40, walkHandleY + 40
+        );
+        canvas.drawRoundRect(walkHandleRect, 50, 50, sliderHandlePaint);
+
+        canvas.drawText("Walk Volume", centerX, walkSliderY - 20, sliderTextPaint);
     }
+
+
 
     private Bitmap blurBitmap(Bitmap bitmap) {
         RenderScript rs = RenderScript.create(getContext());
@@ -1494,6 +1585,38 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }, 500);
     }
+    private void updateVolume(float touchX, int sliderType) {
+        float sliderRange;
+        float newPosition;
+        RectF sliderTrack;
+        float volume;
+
+        switch (sliderType) {
+            case 0: // Background Volume
+                sliderRange = volumeSliderTrack.width();
+                newPosition = Math.max(volumeSliderTrack.left, Math.min(touchX, volumeSliderTrack.right));
+                backgroundVolume = ((newPosition - volumeSliderTrack.left) / sliderRange) * 100f;
+                volume = backgroundVolume / 100f;
+                MainActivity.backgorund_voice.setVolume(volume, volume);
+                break;
+            case 1: // Shoot Volume
+                sliderRange = shootVolumeSliderTrack.width();
+                newPosition = Math.max(shootVolumeSliderTrack.left, Math.min(touchX, shootVolumeSliderTrack.right));
+                shootVolume = ((newPosition - shootVolumeSliderTrack.left) / sliderRange) * 100f;
+                volume = shootVolume / 100f;
+                MainActivity.shoot_voice.setVolume(volume, volume);
+                break;
+            case 2: // Walk Volume
+                sliderRange = walkVolumeSliderTrack.width();
+                newPosition = Math.max(walkVolumeSliderTrack.left, Math.min(touchX, walkVolumeSliderTrack.right));
+                walkVolume = ((newPosition - walkVolumeSliderTrack.left) / sliderRange) * 100f;
+                volume = walkVolume / 100f;
+                MainActivity.run_voice.setVolume(volume, volume);
+                break;
+        }
+    }
+
+
     private String getDots(int count) {
         StringBuilder dots = new StringBuilder();
         for (int i = 0; i < count; i++) {
@@ -1519,13 +1642,43 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     invalidate();
                     return true;
                 }
-                if (buttonSoundOnOFF != null && buttonSoundOnOFF.contains((int) touchX, (int) touchY)) {
-                    backgorundVole += 1;
-                    if (backgorundVole % 2 == 0) {
-                        MainActivity.backgorund_voice.start();
-                    } else {
-                        MainActivity.backgorund_voice.pause();
+                if (backgroundMusicVolumeSliderTrack != null && backgroundMusicVolumeSliderTrack.contains(touchX, touchY)) {
+                    isDraggingBackgroundMusicSlider = true;
+                    updateVolume(touchX, 0);
+                    SurfaceHolder holder = getHolder();
+                    Canvas canvas = null;
+                    try {
+                        canvas = holder.lockCanvas();
+                        if (canvas != null) {
+                            drawSettingsScreen(canvas);
+                        }
+                    } finally {
+                        if (canvas != null) {
+                            holder.unlockCanvasAndPost(canvas);
+                        }
                     }
+                    return true;
+                }
+                if (shootVolumeSliderTrack != null && shootVolumeSliderTrack.contains(touchX, touchY)) {
+                    isDraggingShootSlider = true;
+                    updateVolume(touchX, 1);
+                    SurfaceHolder holder = getHolder();
+                    Canvas canvas = null;
+                    try {
+                        canvas = holder.lockCanvas();
+                        if (canvas != null) {
+                            drawSettingsScreen(canvas);
+                        }
+                    } finally {
+                        if (canvas != null) {
+                            holder.unlockCanvasAndPost(canvas);
+                        }
+                    }
+                    return true;
+                }
+                if (walkVolumeSliderTrack != null && walkVolumeSliderTrack.contains(touchX, touchY)) {
+                    isDraggingWalkSlider = true;
+                    updateVolume(touchX, 2);
                     SurfaceHolder holder = getHolder();
                     Canvas canvas = null;
                     try {
@@ -1648,11 +1801,67 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
             return true;
 
+        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            if (isDraggingBackgroundMusicSlider) {
+                updateVolume(touchX, 0);
+                SurfaceHolder holder = getHolder();
+                Canvas canvas = null;
+                try {
+                    canvas = holder.lockCanvas();
+                    if (canvas != null) {
+                        drawSettingsScreen(canvas);
+                    }
+                } finally {
+                    if (canvas != null) {
+                        holder.unlockCanvasAndPost(canvas);
+                    }
+                }
+                return true;
+            } else if (isDraggingShootSlider) {
+                updateVolume(touchX, 1);
+                SurfaceHolder holder = getHolder();
+                Canvas canvas = null;
+                try {
+                    canvas = holder.lockCanvas();
+                    if (canvas != null) {
+                        drawSettingsScreen(canvas);
+                    }
+                } finally {
+                    if (canvas != null) {
+                        holder.unlockCanvasAndPost(canvas);
+                    }
+                }
+                return true;
+            } else if (isDraggingWalkSlider) {
+                updateVolume(touchX, 2);
+                SurfaceHolder holder = getHolder();
+                Canvas canvas = null;
+                try {
+                    canvas = holder.lockCanvas();
+                    if (canvas != null) {
+                        drawSettingsScreen(canvas);
+                    }
+                } finally {
+                    if (canvas != null) {
+                        holder.unlockCanvasAndPost(canvas);
+                    }
+                }
+                return true;
+            }
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            isDraggingBackgroundMusicSlider = false;
+            isDraggingShootSlider = false;
+            isDraggingWalkSlider = false;
             return true;
         }
         return super.onTouchEvent(event);
     }
+
+
+
+
+
+
 
     private void hideGameButtons() {
         ((Activity) getContext()).runOnUiThread(new Runnable() {
@@ -1676,7 +1885,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 MainActivity.btnRight.setVisibility(View.VISIBLE);
                 MainActivity.btnJump.setVisibility(View.VISIBLE);
                 MainActivity.btnShoot.setVisibility(View.VISIBLE);
-                // Убрана установка видимости для btnUse, так как она управляется в update()
                 // MainActivity.btnPause.setVisibility(View.VISIBLE);
             }
         });
