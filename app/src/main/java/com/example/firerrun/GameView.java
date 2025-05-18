@@ -74,7 +74,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private RectF volumeSliderHandle;
     private boolean isDraggingSlider = false;
 
-
     private boolean wasNearSwitch = false;
 
     private Rect backButton;
@@ -1459,7 +1458,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         int sliderWidth = screenWidth / 5;
         int sliderHeight = 50;
         int centerX = screenWidth / 2;
-        int topY = 250;
+        int topY = 300;
+        int verticalSpacing = 200;
 
         backgroundMusicVolumeSliderTrack = new RectF(
                 centerX - sliderWidth / 2,
@@ -1471,7 +1471,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         canvas.drawRoundRect(backgroundMusicVolumeSliderTrack, 20, 20, sliderTrackPaint);
 
         float backgroundMusicSliderRange = backgroundMusicVolumeSliderTrack.width();
-        float backgroundMusicHandleX = backgroundMusicVolumeSliderTrack.left + (backgroundMusicVolume / 100f) * backgroundMusicSliderRange;
+        float backgroundMusicHandleX = backgroundMusicVolumeSliderTrack.left + (backgroundVolume / 100f) * backgroundMusicSliderRange;
         float backgroundMusicHandleY = backgroundMusicVolumeSliderTrack.centerY();
 
         RectF backgroundMusicHandleRect = new RectF(
@@ -1482,7 +1482,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         canvas.drawText("Background Music Volume", centerX, topY - 20, sliderTextPaint);
 
-        int shootSliderY = topY + 100;
+        int shootSliderY = topY + verticalSpacing;
         shootVolumeSliderTrack = new RectF(
                 centerX - sliderWidth / 2,
                 shootSliderY,
@@ -1504,7 +1504,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         canvas.drawText("Shoot Volume", centerX, shootSliderY - 20, sliderTextPaint);
 
-        int walkSliderY = shootSliderY + 100;
+        int walkSliderY = shootSliderY + verticalSpacing;
         walkVolumeSliderTrack = new RectF(
                 centerX - sliderWidth / 2,
                 walkSliderY,
@@ -1526,6 +1526,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         canvas.drawText("Walk Volume", centerX, walkSliderY - 20, sliderTextPaint);
     }
+
 
 
 
@@ -1592,30 +1593,32 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         float volume;
 
         switch (sliderType) {
-            case 0: // Background Volume
-                sliderRange = volumeSliderTrack.width();
-                newPosition = Math.max(volumeSliderTrack.left, Math.min(touchX, volumeSliderTrack.right));
-                backgroundVolume = ((newPosition - volumeSliderTrack.left) / sliderRange) * 100f;
+            case 0: // Background Music Volume
+                sliderTrack = backgroundMusicVolumeSliderTrack; // Use the correct field
+                sliderRange = sliderTrack.width();
+                newPosition = Math.max(sliderTrack.left, Math.min(touchX, sliderTrack.right));
+                backgroundVolume = ((newPosition - sliderTrack.left) / sliderRange) * 100f;
                 volume = backgroundVolume / 100f;
                 MainActivity.backgorund_voice.setVolume(volume, volume);
                 break;
             case 1: // Shoot Volume
-                sliderRange = shootVolumeSliderTrack.width();
-                newPosition = Math.max(shootVolumeSliderTrack.left, Math.min(touchX, shootVolumeSliderTrack.right));
-                shootVolume = ((newPosition - shootVolumeSliderTrack.left) / sliderRange) * 100f;
+                sliderTrack = shootVolumeSliderTrack;
+                sliderRange = sliderTrack.width();
+                newPosition = Math.max(sliderTrack.left, Math.min(touchX, sliderTrack.right));
+                shootVolume = ((newPosition - sliderTrack.left) / sliderRange) * 100f;
                 volume = shootVolume / 100f;
                 MainActivity.shoot_voice.setVolume(volume, volume);
                 break;
             case 2: // Walk Volume
-                sliderRange = walkVolumeSliderTrack.width();
-                newPosition = Math.max(walkVolumeSliderTrack.left, Math.min(touchX, walkVolumeSliderTrack.right));
-                walkVolume = ((newPosition - walkVolumeSliderTrack.left) / sliderRange) * 100f;
+                sliderTrack = walkVolumeSliderTrack;
+                sliderRange = sliderTrack.width();
+                newPosition = Math.max(sliderTrack.left, Math.min(touchX, sliderTrack.right));
+                walkVolume = ((newPosition - sliderTrack.left) / sliderRange) * 100f;
                 volume = walkVolume / 100f;
                 MainActivity.run_voice.setVolume(volume, volume);
                 break;
         }
     }
-
 
     private String getDots(int count) {
         StringBuilder dots = new StringBuilder();
