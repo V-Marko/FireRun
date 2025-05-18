@@ -18,7 +18,7 @@ public class MainActivity extends Activity {
     public static ImageButton btnRight;
     public static ImageButton btnJump;
     public static ImageButton btnShoot;
-    public MaterialButton btnPause;
+    public static MaterialButton btnPause;
     public static ImageButton btnUse;
 
     public static MediaPlayer shoot_voice;

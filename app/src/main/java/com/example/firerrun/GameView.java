@@ -33,6 +33,9 @@ import java.util.List;
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public static int headState = 0;
 
+    private Bitmap settingsBulletIcon;
+    private Bitmap settingsHead1Icon;
+    private Bitmap settingsHead2Icon;
     //Volse
     private int backgorundVole = 0;
 
@@ -423,6 +426,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         float scaleFactor = 1.0f;
         bodyBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.person_stop1);
+
+        int sliderImageWidth = 100;
+        int sliderImageHeight = 100;
+
+
+        settingsBulletIcon = BitmapFactory.decodeResource(getResources(), R.drawable.settings_bullet_icon);
+        settingsBulletIcon = Bitmap.createScaledBitmap(settingsBulletIcon, sliderImageWidth, sliderImageHeight, false);
+
+        settingsHead1Icon = BitmapFactory.decodeResource(getResources(), R.drawable.settings_head1_icon);
+        settingsHead1Icon = Bitmap.createScaledBitmap(settingsHead1Icon, sliderImageWidth, sliderImageHeight, false);
+
+        settingsHead2Icon = BitmapFactory.decodeResource(getResources(), R.drawable.settings_head2_icon);
+        settingsHead2Icon = Bitmap.createScaledBitmap(settingsHead2Icon, sliderImageWidth, sliderImageHeight, false);
+
         if (bodyBitmap == null) {
         } else {
             bodyBitmap = Bitmap.createScaledBitmap(bodyBitmap, (int) (394 * scaleFactor), (int) (437 * scaleFactor), true);
@@ -1474,14 +1491,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         float backgroundMusicHandleX = backgroundMusicVolumeSliderTrack.left + (backgroundVolume / 100f) * backgroundMusicSliderRange;
         float backgroundMusicHandleY = backgroundMusicVolumeSliderTrack.centerY();
 
-        RectF backgroundMusicHandleRect = new RectF(
-                backgroundMusicHandleX - 40, backgroundMusicHandleY - 40,
-                backgroundMusicHandleX + 40, backgroundMusicHandleY + 40
-        );
-        canvas.drawRoundRect(backgroundMusicHandleRect, 50, 50, sliderHandlePaint);
+        // Draw settings_head1_icon for background music volume
+        if (settingsHead1Icon != null) {
+            canvas.drawBitmap(settingsHead1Icon, backgroundMusicHandleX - settingsHead1Icon.getWidth() / 2, backgroundMusicHandleY - settingsHead1Icon.getHeight() / 2, null);
+        }
 
         canvas.drawText("Background Music Volume", centerX, topY - 20, sliderTextPaint);
 
+        // Draw shoot volume slider
         int shootSliderY = topY + verticalSpacing;
         shootVolumeSliderTrack = new RectF(
                 centerX - sliderWidth / 2,
@@ -1496,14 +1513,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         float shootHandleX = shootVolumeSliderTrack.left + (shootVolume / 100f) * shootSliderRange;
         float shootHandleY = shootVolumeSliderTrack.centerY();
 
-        RectF shootHandleRect = new RectF(
-                shootHandleX - 40, shootHandleY - 40,
-                shootHandleX + 40, shootHandleY + 40
-        );
-        canvas.drawRoundRect(shootHandleRect, 50, 50, sliderHandlePaint);
+        // Draw settings_bullet_icon for shoot volume
+        if (settingsBulletIcon != null) {
+            canvas.drawBitmap(settingsBulletIcon, shootHandleX - settingsBulletIcon.getWidth() / 2, shootHandleY - settingsBulletIcon.getHeight() / 2, null);
+        }
 
         canvas.drawText("Shoot Volume", centerX, shootSliderY - 20, sliderTextPaint);
 
+        // Draw walk volume slider
         int walkSliderY = shootSliderY + verticalSpacing;
         walkVolumeSliderTrack = new RectF(
                 centerX - sliderWidth / 2,
@@ -1518,11 +1535,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         float walkHandleX = walkVolumeSliderTrack.left + (walkVolume / 100f) * walkSliderRange;
         float walkHandleY = walkVolumeSliderTrack.centerY();
 
-        RectF walkHandleRect = new RectF(
-                walkHandleX - 40, walkHandleY - 40,
-                walkHandleX + 40, walkHandleY + 40
-        );
-        canvas.drawRoundRect(walkHandleRect, 50, 50, sliderHandlePaint);
+        // Draw settings_head2_icon for walk volume
+        if (settingsHead2Icon != null) {
+            canvas.drawBitmap(settingsHead2Icon, walkHandleX - settingsHead2Icon.getWidth() / 2, walkHandleY - settingsHead2Icon.getHeight() / 2, null);
+        }
 
         canvas.drawText("Walk Volume", centerX, walkSliderY - 20, sliderTextPaint);
     }
@@ -1875,7 +1891,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 MainActivity.btnJump.setVisibility(View.GONE);
                 MainActivity.btnShoot.setVisibility(View.GONE);
                 MainActivity.btnUse.setVisibility(View.GONE);
-//                MainActivity.btnPause.setVisibility(View.GONE);
+                MainActivity.btnPause.setVisibility(View.GONE);
             }
         });
     }
@@ -1888,10 +1904,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 MainActivity.btnRight.setVisibility(View.VISIBLE);
                 MainActivity.btnJump.setVisibility(View.VISIBLE);
                 MainActivity.btnShoot.setVisibility(View.VISIBLE);
-                // MainActivity.btnPause.setVisibility(View.VISIBLE);
+                MainActivity.btnPause.setVisibility(View.VISIBLE);
             }
         });
     }
+
 
 
 
