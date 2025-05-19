@@ -1289,6 +1289,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
     private void drawPersonScreen(Canvas canvas) {
+        hideGameButtons(); // Hide the game buttons when the Person screen is open
+
         Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
         int screenWidth = getWidth();
         int screenHeight = getHeight();
@@ -1433,6 +1435,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
     private void drawSettingsScreen(Canvas canvas) {
+        hideGameButtons(); // Hide the game buttons when the Settings screen is open
+
         Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
         int screenWidth = getWidth();
         int screenHeight = getHeight();
@@ -1484,7 +1488,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         int topY = 300;
         int verticalSpacing = 200;
 
-
         backgroundMusicVolumeSliderTrack = new RectF(
                 centerX - sliderWidth / 2,
                 topY,
@@ -1523,7 +1526,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         canvas.drawText("Shoot Volume", centerX, shootSliderY - 20, sliderTextPaint);
-
 
         int walkSliderY = shootSliderY + verticalSpacing;
         walkVolumeSliderTrack = new RectF(
@@ -1566,7 +1568,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.restore();
         }
     }
-
 
 
 
@@ -1674,6 +1675,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return dots.toString();
     }
 
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float touchX = event.getX();
@@ -1688,6 +1690,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 if (backButton != null && backButton.contains((int) touchX, (int) touchY)) {
                     isSettingsScreenVisible = false;
                     showGameButtons();
+                    resumeGame(); // Resume the game when "Accept" is clicked
                     invalidate();
                     return true;
                 }
@@ -1750,6 +1753,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     updatePlayerHead();
                     player.updateHeadImage();
                     showGameButtons();
+                    resumeGame(); // Resume the game when "Accept" is clicked
                     invalidate();
                     return true;
                 }
@@ -1905,12 +1909,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         return super.onTouchEvent(event);
     }
-
-
-
-
-
-
 
     private void hideGameButtons() {
         ((Activity) getContext()).runOnUiThread(new Runnable() {
