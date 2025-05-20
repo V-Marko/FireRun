@@ -27,8 +27,11 @@ import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.WindowManager;
 
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public static int headState = 0;
@@ -144,7 +147,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         public void run() {
             loadingDotsCount = (loadingDotsCount + 1) % 4;
             invalidate();
-            loadingHandler.postDelayed(this, 500);
+            loadingHandler.postDelayed(this, 1000); // Increase interval to 1 second
         }
     };
     public List<BoomScript> boomScripts = new ArrayList<>();
@@ -218,16 +221,24 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         if (level - 1 >= 0 && level - 1 < BlockMoveList.BlockMove.length) {
             for (int[] blockData : BlockMoveList.BlockMove[level - 1]) {
+                if (blockData.length < 13) {
+                    Log.e("GameView", "Invalid blockData length: " + blockData.length);
+                    continue;
+                }
+                Bitmap bitmap = bitmapCache.get("block");
+                if (bitmap == null) {
+                    Log.e("GameView", "Bitmap not found for key: block");
+                    bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.block);
+                }
                 BlockMoveScript blockMove = new BlockMoveScript(
-                        blockData[0], blockData[1], blockData[2], blockData[3], blockData[4],
-                        blockData[5], blockData[6], blockData[7], blockData[8],
-                        blockData[9], blockData[10], blockData[11], blockData[12],
-                        blockImage
+                        (float) blockData[0], (float) blockData[1], (float) blockData[2], (float) blockData[3], (float) blockData[4],
+                        (float) blockData[5], (float) blockData[6], (float) blockData[7], (float) blockData[8],
+                        (float) blockData[9], (float) blockData[10], (float) blockData[11], (float) blockData[12],
+                        bitmap
                 );
                 blockMoveScripts.add(blockMove);
             }
         }
-
         if (level - 1 >= 0 && level - 1 < SwitchList.switches.length) {
             for (int[] switchData : SwitchList.switches[level - 1]) {
                 Switch switchObj = new Switch(
@@ -242,16 +253,25 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         if (level - 1 >= 0 && level - 1 < BlocksList.Blocks.length) {
             for (int[] blockData : BlocksList.Blocks[level - 1]) {
-                int blockId;
-                switch (blockData[4]) {
-                    case 0: blockId = R.drawable.block; break;
-                    case 1: blockId = R.drawable.block2; break;
-                    case 2: blockId = R.drawable.oak_tree; break;
-                    case 3: blockId = R.drawable.oak2; break;
-                    case 4: blockId = R.drawable.barrel; break;
-                    default: blockId = R.drawable.block; break;
+                if (blockData.length < 5) {
+                    Log.e("GameView", "Invalid blockData length: " + blockData.length);
+                    continue;
                 }
-                Block block = new Block(getContext(), blockData[0], blockData[1], blockData[2], blockData[3], blockId);
+                String blockKey;
+                switch (blockData[4]) {
+                    case 0: blockKey = "block"; break;
+                    case 1: blockKey = "block2"; break;
+                    case 2: blockKey = "oak_tree"; break;
+                    case 3: blockKey = "oak2"; break;
+                    case 4: blockKey = "barrel"; break;
+                    default: blockKey = "block"; break;
+                }
+                Bitmap imageResourceId = bitmapCache.get(blockKey);
+                if (imageResourceId == null) {
+                    Log.e("GameView", "Bitmap not found for key: " + blockKey);
+                    imageResourceId = BitmapFactory.decodeResource(getResources(), R.drawable.block); // Fallback
+                }
+                Block block = new Block(getContext(), (float) blockData[0], (float) blockData[1], blockData[2], blockData[3], imageResourceId);
                 blockList.add(block);
             }
         }
@@ -296,15 +316,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         if (level - 1 >= 0 && level - 1 < ilusoryblocksList.ilusoryblocks.length) {
             for (int[] illusoryData : ilusoryblocksList.ilusoryblocks[level - 1]) {
-                Bitmap illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.block);
+                String blockKey;
                 switch (illusoryData[4]) {
-                    case 0: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.block); break;
-                    case 1: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.block2); break;
-                    case 2: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.oak_tree); break;
-                    case 3: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.oak2); break;
-                    case 4: illusoryBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.barrel); break;
+                    case 0: blockKey = "illusory_block"; break;
+                    case 1: blockKey = "illusory_block2"; break;
+                    case 2: blockKey = "illusory_oak_tree"; break;
+                    case 3: blockKey = "illusory_oak2"; break;
+                    case 4: blockKey = "illusory_barrel"; break;
+                    default: blockKey = "illusory_block"; break;
                 }
-                illusoryBitmap = Bitmap.createScaledBitmap(illusoryBitmap, illusoryData[2], illusoryData[3], false);
+                String cacheKey = blockKey + "_" + illusoryData[2] + "x" + illusoryData[3];
+                Bitmap illusoryBitmap = bitmapCache.get(cacheKey);
+                if (illusoryBitmap == null) {
+                    Log.e("GameView", "Illusory bitmap not found for key: " + cacheKey);
+                    illusoryBitmap = bitmapCache.get("illusory_block_" + illusoryData[2] + "x" + illusoryData[3]); // Fallback
+                }
                 ilusoryblocks illusoryBlock = new ilusoryblocks(
                         illusoryData[0], illusoryData[1], illusoryData[2], illusoryData[3],
                         illusoryBitmap, getContext()
@@ -313,26 +339,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        if (level - 1 < BlocksList.Blocks.length) {
-            for (int[] blockData : BlocksList.Blocks[level - 1]) {
-                Block block;
-                switch (blockData[4]) {
-                    case 0: BlockID = R.drawable.block; break;
-                    case 1: BlockID = R.drawable.block2; break;
-                    case 2: BlockID = R.drawable.oak_tree; break;
-                    case 3: BlockID = R.drawable.oak2; break;
-                    case 4: BlockID = R.drawable.barrel; break;
-                }
-                block = new Block(getContext(), blockData[0], blockData[1], blockData[2], blockData[3], BlockID);
-                blockList.add(block);
-            }
-        }
-
         if (level - 1 < SpeedGreenList.SpeedGreenList.length) {
             for (int[] speedGreenData : SpeedGreenList.SpeedGreenList[level - 1]) {
+                Bitmap bitmap = bitmapCache.get("speed_green");
+                if (bitmap == null) {
+                    Log.e("GameView", "Bitmap not found for speed_green");
+                    bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.speed_green); // Fallback
+                }
                 SpeedGreenScript speedGreen = new SpeedGreenScript(
                         speedGreenData[0], speedGreenData[1], speedGreenData[2], speedGreenData[3],
-                        BitmapFactory.decodeResource(getContext().getResources(), R.drawable.speed_green)
+                        bitmap
                 );
                 speedGreenScripts.add(speedGreen);
             }
@@ -340,8 +356,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         if (level - 1 < BadBoxList.BadBoxs.length) {
             for (int[] badBoxData : BadBoxList.BadBoxs[level - 1]) {
-                BadBox badBox = new BadBox(badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
-                        BitmapFactory.decodeResource(getContext().getResources(), R.drawable.bad_box));
+                Bitmap bitmap = bitmapCache.get("bad_box");
+                if (bitmap == null) {
+                    Log.e("GameView", "Bitmap not found for bad_box");
+                    bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.bad_box); // Fallback
+                }
+                BadBox badBox = new BadBox(
+                        badBoxData[0], badBoxData[1], badBoxData[2], badBoxData[3],
+                        bitmap
+                );
                 badBoxList.add(badBox);
             }
         }
@@ -359,16 +382,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         stoneData[0], -stoneData[3], 15f, stoneData[2], stoneData[3], getContext()
                 );
                 blowingStones.add(stone);
-            }
-        }
-
-        if (level - 1 < SmallRunBoomList.SmallRunBoomList.length) {
-            for (int[] boomData : SmallRunBoomList.SmallRunBoomList[level - 1]) {
-                SmallRunBoom smallBoom = new SmallRunBoom(
-                        boomData[0], boomData[1], boomData[2], boomData[3],
-                        boomData[4], boomData[5], boomData[6]
-                );
-                smallRunBooms.add(smallBoom);
             }
         }
 
@@ -397,11 +410,36 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         player.resetPosition();
         this.level = level;
     }
+    private Map<String, Bitmap> bitmapCache = new HashMap<>();
 
+    private void preloadBitmaps() {
+        bitmapCache.put("block", BitmapFactory.decodeResource(getResources(), R.drawable.block));
+        bitmapCache.put("block2", BitmapFactory.decodeResource(getResources(), R.drawable.block2));
+        bitmapCache.put("oak_tree", BitmapFactory.decodeResource(getResources(), R.drawable.oak_tree));
+        bitmapCache.put("oak2", BitmapFactory.decodeResource(getResources(), R.drawable.oak2));
+        bitmapCache.put("barrel", BitmapFactory.decodeResource(getResources(), R.drawable.barrel));
+        bitmapCache.put("speed_green", BitmapFactory.decodeResource(getResources(), R.drawable.speed_green));
+        bitmapCache.put("bad_box", BitmapFactory.decodeResource(getResources(), R.drawable.bad_box));
+        bitmapCache.put("background", BitmapFactory.decodeResource(getResources(), R.drawable.background));
+        bitmapCache.put("background2", BitmapFactory.decodeResource(getResources(), R.drawable.background2));
+        for (int i = 0; i < BlockMoveList.BlockMove.length; i++) {
+            for (int[] blockData : BlockMoveList.BlockMove[i]) {
+                int width = blockData[2];
+                int height = blockData[3];
+                String key = "block_" + width + "x" + height;
+                if (!bitmapCache.containsKey(key)) {
+                    Bitmap bitmap = bitmapCache.get("block");
+                    bitmap = Bitmap.createScaledBitmap(bitmap, width, height, false);
+                    bitmapCache.put(key, bitmap);
+                }
+            }
+        }
+    }
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
         getHolder().addCallback(this);
 
+        preloadBitmaps();
         isMenuVisible = true;
         isInMenu = true;
 
@@ -510,11 +548,55 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
         }
+        // Recycle BlockMoveScript bitmaps
+        for (BlockMoveScript blockMove : blockMoveScripts) {
+            blockMove.recycle();
+        }
+        // Recycle Block bitmaps
+        for (Block block : blockList) {
+            block.recycle();
+        }
+        // Existing recycling code
         if (wallImage != null && !wallImage.isRecycled()) {
             wallImage.recycle();
             wallImage = null;
         }
+        if (background != null && !background.isRecycled()) {
+            background.recycle();
+            background = null;
+        }
+        if (playerImage != null && !playerImage.isRecycled()) {
+            playerImage.recycle();
+            playerImage = null;
+        }
+        if (bodyBitmap != null && !bodyBitmap.isRecycled()) {
+            bodyBitmap.recycle();
+            bodyBitmap = null;
+        }
+        if (gunBitmap != null && !gunBitmap.isRecycled()) {
+            gunBitmap.recycle();
+            gunBitmap = null;
+        }
+        if (settingsBulletIcon != null && !settingsBulletIcon.isRecycled()) {
+            settingsBulletIcon.recycle();
+            settingsBulletIcon = null;
+        }
+        if (settingsHead1Icon != null && !settingsHead1Icon.isRecycled()) {
+            settingsHead1Icon.recycle();
+            settingsHead1Icon = null;
+        }
+        if (settingsHead2Icon != null && !settingsHead2Icon.isRecycled()) {
+            settingsHead2Icon.recycle();
+            settingsHead2Icon = null;
+        }
+        for (Bitmap bitmap : bitmapCache.values()) {
+            if (bitmap != null && !bitmap.isRecycled()) {
+                bitmap.recycle();
+            }
+        }
+        bitmapCache.clear();
     }
+
 
 
     private int btnUseHideDelay = 0;
@@ -1609,23 +1691,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         textPaint.setTextAlign(Paint.Align.CENTER);
 
         String loadingText = "Loading" + getDots(loadingDotsCount);
-        canvas.drawText(loadingText, getWidth() / 2, getHeight() / 2 - 50, textPaint);
-
-        textPaint.setTextSize(60);
-        canvas.drawText(loadingTips[currentTipIndex], getWidth() / 2, getHeight() / 2 + 50, textPaint);
-
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - lastTipChangeTime >= tipChangeInterval) {
-            currentTipIndex = (currentTipIndex + 1) % loadingTips.length;
-            lastTipChangeTime = currentTime;
-        }
-
-        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                invalidate();
-            }
-        }, 500);
+        canvas.drawText(loadingText, getWidth() / 2, getHeight() / 2, textPaint);
     }
     private void updateVolume(float touchX, int sliderType) {
         float sliderRange;
@@ -1958,30 +2024,22 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         @Override
         protected Void doInBackground(Integer... levels) {
             int level = levels[0];
-            loadLevel(level);
+            loadLevel(level); // Optimized loadLevel method
             return null;
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
-            player.setBlocks(blockList);
             isLoad = false;
             isInMenu = false;
             stopLoadingAnimation();
+            player.setBlocks(blockList);
+            player.setBlockMoveScripts(blockMoveScripts);
+            player.setSwitches(switches);
             resumeGame();
-
-            ((Activity) getContext()).runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    MainActivity.btnLeft.setVisibility(View.VISIBLE);
-                    MainActivity.btnRight.setVisibility(View.VISIBLE);
-                    MainActivity.btnJump.setVisibility(View.VISIBLE);
-                    MainActivity.btnShoot.setVisibility(View.VISIBLE);
-                }
-            });
+            invalidate(); // Trigger redraw
         }
     }
-
     private void goToMenu() {
         isInMenu = true;
         isMenuVisible = true;

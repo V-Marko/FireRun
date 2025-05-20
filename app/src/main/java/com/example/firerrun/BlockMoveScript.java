@@ -2,26 +2,24 @@ package com.example.firerrun;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.util.Log;
 
 public class BlockMoveScript {
-    public float x;         // Позиция движущегося блока (блок 2)
+    public float x;
     public float y;
     public float width;
     public float height;
     public float speed;
-
-    public float position1X; // Позиция блока 1
+    public float position1X;
     public float position1Y;
     public float width1;
     public float height1;
-
-    public float position2X; // Позиция блока 3
+    public float position2X;
     public float position2Y;
     public float width2;
     public float height2;
-
-    boolean movingRight = true; // Флаг направления движения
-    private Bitmap blockImage;  // Текстура блока
+    boolean movingRight = true;
+    private Bitmap blockImage;
 
     public BlockMoveScript(float x, float y, float width, float height, float speed,
                            float position1X, float position1Y, float width1, float height1,
@@ -40,7 +38,12 @@ public class BlockMoveScript {
         this.position2Y = position2Y;
         this.width2 = width2;
         this.height2 = height2;
-        this.blockImage = Bitmap.createScaledBitmap(blockImage, (int)width, (int)height, false);
+        if (blockImage != null && width > 0 && height > 0) {
+            this.blockImage = Bitmap.createScaledBitmap(blockImage, (int) width, (int) height, false);
+        } else {
+            this.blockImage = blockImage; // Fallback to unscaled bitmap or null
+            Log.e("BlockMoveScript", "Invalid bitmap or dimensions: width=" + width + ", height=" + height);
+        }
     }
 
     public void update() {
@@ -76,11 +79,20 @@ public class BlockMoveScript {
     }
 
     public void draw(Canvas canvas) {
-        canvas.drawBitmap(blockImage, x, y, null);
+        if (blockImage != null) {
+            canvas.drawBitmap(blockImage, x, y, null);
+        }
     }
 
     public float getX() { return x; }
     public float getY() { return y; }
     public float getWidth() { return width; }
     public float getHeight() { return height; }
+
+    public void recycle() {
+        if (blockImage != null && !blockImage.isRecycled()) {
+            blockImage.recycle();
+            blockImage = null;
+        }
+    }
 }
