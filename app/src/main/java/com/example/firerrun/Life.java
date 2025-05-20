@@ -131,4 +131,8 @@ public class Life {
     public void resetLife() {
         currentLives = 100;
     }
+
+    public void setCurrentLives(int lives) {
+        this.currentLives = Math.min(lives, 100); // Не позволяем превысить 100
+    }
 }

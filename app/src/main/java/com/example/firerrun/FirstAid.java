@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.RectF;
+import android.util.Log;
 
 public class FirstAid {
     float x;
@@ -21,6 +22,7 @@ public class FirstAid {
         this.isActive = true;
         this.bitmap = Bitmap.createScaledBitmap(cachedBitmap, width, height, false);
         this.bounds = new RectF(x, y, x + width, y + height);
+        Log.d("FirstAid", "Initialized at x=" + x + ", y=" + y + ", width=" + width + ", height=" + height);
     }
 
     public void draw(Canvas canvas) {
@@ -30,27 +32,39 @@ public class FirstAid {
     }
 
     public boolean checkCollisionWithPlayer(Player player) {
-        if (!isActive) {
-            return false;
-        }
+        if (!isActive) return false;
+
         RectF playerBounds = new RectF(
                 player.getX(), player.getY(),
-                player.getX() + player.getWidth(), player.getY() + player.getHeight()
+                player.getX() + player.getWidth(),
+                player.getY() + player.getHeight()
         );
-        return bounds.intersect(playerBounds);
+
+        RectF firstAidBounds = new RectF(x, y, x + width, y + height);
+
+        boolean collision = RectF.intersects(playerBounds, firstAidBounds);
+
+        if (collision) {
+            Log.i("FirstAid", "Collision detected with player!");
+        }
+
+        return collision;
     }
 
     public void collect() {
         isActive = false;
+        Log.i("FirstAid", "FirstAid collected at (" + x + "," + y + ")");
     }
 
     public boolean isActive() {
+        Log.d("FirstAid", "Checking if active: " + isActive);
         return isActive;
     }
 
     public Bitmap getBitmap() {
         return bitmap;
     }
+
     public float getX() {
         return x;
     }

@@ -254,7 +254,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
             Log.d("GameView", "Loaded " + firstAidList.size() + " first aid kits for level " + level);
         }
-
         if (level - 1 >= 0 && level - 1 < SwitchList.switches.length) {
             for (int[] switchData : SwitchList.switches[level - 1]) {
                 Switch switchObj = new Switch(
@@ -571,10 +570,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         for (Block block : blockList) {
             block.recycle();
         }
-        // Recycle FirstAid bitmaps
         for (FirstAid firstAid : firstAidList) {
-            if (firstAid.getBitmap() != null && !firstAid.getBitmap().isRecycled()) {
-                firstAid.getBitmap().recycle();
+            if (firstAid.isActive() && firstAid.checkCollisionWithPlayer(player)) {
+                firstAidActive(firstAid); // Добавьте этот вызов
+                Log.i("FirstAid", "FirstAid collected!");
             }
         }
         // Existing recycling code
@@ -996,12 +995,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         player.update();
     }
 
-    private void firstAidActive(FirstAid firstAid){
-        if((life.currentLives)+30 < 100){
-            life.addedecreaseLife(30);
+    private void firstAidActive(FirstAid firstAid) {
+        if (life.currentLives < 100) { // Проверяем, что жизни не полные
+            int healAmount = 30;
+            // Убедимся, что не превысим максимум
+            int newLife = Math.min(life.currentLives + healAmount, 100);
+            life.setCurrentLives(newLife);
             firstAid.collect();
+            Log.i("FirstAid", "Healed player. New life: " + life.currentLives);
+        } else {
+            Log.i("FirstAid", "Player already has full health");
         }
-
     }
     private boolean checkCollisionWithWall(WallUpDownScript wall, Player player) {
         return player.getX() + player.getWidth() > wall.getX() &&
