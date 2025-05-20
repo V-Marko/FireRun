@@ -109,7 +109,6 @@ public class SwitchCader {
                 isAnimating = false;
                 isCameraMoving = false;
                 lastOffset = 0;
-                Log.d("SwitchCader", "Animation ended, lastOffset reset to 0");
             }
         });
 

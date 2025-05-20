@@ -63,6 +63,9 @@ public class Player {
     private float moveSpeed;
 
     private int headStill = R.drawable.person_head_2;
+    private static final int HEAD_STATE_0 = 0;
+    private static final int HEAD_STATE_1 = 1;
+    private static final int HEAD_STATE_2 = 2;
 
     public Player(Context context, GameView gameView) {
         this.context = context;
@@ -97,7 +100,6 @@ public class Player {
             headStill = R.drawable.person_head;
             headImage = BitmapFactory.decodeResource(context.getResources(), headStill);
             headImage = Bitmap.createScaledBitmap(headImage, headWidth, headHeight, false);
-            Log.i("Player", "Head updated to person_head");
         } else if (GameView.headState == 1) {
             headStill = R.drawable.person_head_2;
             Bitmap original = BitmapFactory.decodeResource(context.getResources(), headStill);
@@ -107,9 +109,18 @@ public class Player {
             float scale = targetWidth / originalWidth;
             float newHeight = originalHeight * scale;
             headImage = Bitmap.createScaledBitmap(original, (int) targetWidth, (int) newHeight, true);
-            Log.i("Player", "Head updated to person_head_2");
+        } else if (GameView.headState == 2) {
+            headStill = R.drawable.person_head_3;
+            Bitmap original = BitmapFactory.decodeResource(context.getResources(), headStill);
+            float originalWidth = 1057f;
+            float originalHeight = 1088f;
+            float targetWidth = 425f * scaleFactor;
+            float scale = targetWidth / originalWidth;
+            float newHeight = originalHeight * scale;
+            headImage = Bitmap.createScaledBitmap(original, (int) targetWidth, (int) newHeight, true);
         }
     }
+
 
     public void update() {
         float newX = x;
@@ -343,12 +354,19 @@ public class Player {
         }
 
         canvas.drawBitmap(currentBodyImage, x, y, null);
-        canvas.drawBitmap(currentHeadImage, x + (width - headWidth) / 2 - 15, y - headHeight + 20, null);
-        canvas.drawBitmap(currentGunImage, x, y, null);
 
-        for (Bullet bullet : bullets) {
-            bullet.draw(canvas);
+        float headY = y - headHeight + 20;
+        if (GameView.headState == 2) {
+            headY += 15;
         }
+
+        float headX;
+
+        headX = x + (width - headWidth) / 2;
+
+        canvas.drawBitmap(currentHeadImage, headX, headY, null);
+
+        canvas.drawBitmap(currentGunImage, x, y, null);
 
         Paint redPaint = new Paint();
         redPaint.setColor(Color.RED);
@@ -380,7 +398,6 @@ public class Player {
             if (isColliding(rightRectLeft, rightRectTop, rightRectRight, rightRectBottom, block)) {
                 TouchRedBlockTOplayerLEFT = true;
                 speed = 0;
-                Log.i("redPaint", "Left Block touch. Speed set to: " + speed);
             } else {
                 TouchRedBlockTOplayerLEFT = false;
             }
@@ -388,7 +405,6 @@ public class Player {
             if (isColliding(leftRectLeft, leftRectTop, leftRectRight, leftRectBottom, block)) {
                 TouchRedBlockTOplayerRIGHT = true;
                 speed = 0;
-                Log.i("redPaint", "Right Block touch. Speed set to: " + speed);
             } else {
                 TouchRedBlockTOplayerRIGHT = false;
             }
@@ -398,6 +414,9 @@ public class Player {
             speed = 15;
         }
     }
+
+
+
 
     private boolean isColliding(float rectLeft, float rectTop, float rectRight, float rectBottom, Block block) {
         float blockLeft = block.getX();

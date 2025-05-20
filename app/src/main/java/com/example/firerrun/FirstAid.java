@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.RectF;
-import android.util.Log;
 
 public class FirstAid {
     float x;
@@ -22,7 +21,6 @@ public class FirstAid {
         this.isActive = true;
         this.bitmap = Bitmap.createScaledBitmap(cachedBitmap, width, height, false);
         this.bounds = new RectF(x, y, x + width, y + height);
-        Log.d("FirstAid", "Initialized at x=" + x + ", y=" + y + ", width=" + width + ", height=" + height);
     }
 
     public void draw(Canvas canvas) {
@@ -44,20 +42,16 @@ public class FirstAid {
 
         boolean collision = RectF.intersects(playerBounds, firstAidBounds);
 
-        if (collision) {
-            Log.i("FirstAid", "Collision detected with player!");
-        }
+
 
         return collision;
     }
 
     public void collect() {
         isActive = false;
-        Log.i("FirstAid", "FirstAid collected at (" + x + "," + y + ")");
     }
 
     public boolean isActive() {
-        Log.d("FirstAid", "Checking if active: " + isActive);
         return isActive;
     }
 

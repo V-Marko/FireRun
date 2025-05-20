@@ -133,6 +133,6 @@ public class Life {
     }
 
     public void setCurrentLives(int lives) {
-        this.currentLives = Math.min(lives, 100); // Не позволяем превысить 100
+        this.currentLives = Math.min(lives, 100);
     }
 }
