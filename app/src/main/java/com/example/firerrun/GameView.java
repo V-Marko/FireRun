@@ -119,6 +119,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     List<ilusoryblocks> illusoryBlocks = new ArrayList<>();
     List<Switch> switches = new ArrayList<>();
 
+    List<FirstAid> firstAidList = new ArrayList<>();
     public List<WallUpDownScript> wallUpDownScripts = new ArrayList<>();
     private Bitmap wallImage;
     public List<BlockMoveScript> blockMoveScripts = new ArrayList<>();
@@ -218,7 +219,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         turrets.clear();
         turretBullets.clear();
         switches.clear();
-
+        firstAidList.clear();
         if (level - 1 >= 0 && level - 1 < BlockMoveList.BlockMove.length) {
             for (int[] blockData : BlockMoveList.BlockMove[level - 1]) {
                 if (blockData.length < 13) {
@@ -239,6 +240,21 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 blockMoveScripts.add(blockMove);
             }
         }
+        if (level - 1 >= 0 && level - 1 < FirstAidList.FirstAids.length) {
+            Bitmap firstAidBitmap = bitmapCache.get("first_aid");
+            if (firstAidBitmap == null) {
+                Log.e("GameView", "FirstAid bitmap not found in cache, loading fallback");
+                firstAidBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.first_aid);
+            }
+            for (int[] firstAidData : FirstAidList.FirstAids[level - 1]) {
+                FirstAid firstAid = new FirstAid(
+                        firstAidData[0], firstAidData[1], firstAidData[2], firstAidData[3], getContext(), firstAidBitmap
+                );
+                firstAidList.add(firstAid);
+            }
+            Log.d("GameView", "Loaded " + firstAidList.size() + " first aid kits for level " + level);
+        }
+
         if (level - 1 >= 0 && level - 1 < SwitchList.switches.length) {
             for (int[] switchData : SwitchList.switches[level - 1]) {
                 Switch switchObj = new Switch(
@@ -254,7 +270,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (level - 1 >= 0 && level - 1 < BlocksList.Blocks.length) {
             for (int[] blockData : BlocksList.Blocks[level - 1]) {
                 if (blockData.length < 5) {
-                    Log.e("GameView", "Invalid blockData length: " + blockData.length);
                     continue;
                 }
                 String blockKey;
@@ -268,7 +283,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
                 Bitmap imageResourceId = bitmapCache.get(blockKey);
                 if (imageResourceId == null) {
-                    Log.e("GameView", "Bitmap not found for key: " + blockKey);
                     imageResourceId = BitmapFactory.decodeResource(getResources(), R.drawable.block); // Fallback
                 }
                 Block block = new Block(getContext(), (float) blockData[0], (float) blockData[1], blockData[2], blockData[3], imageResourceId);
@@ -422,6 +436,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         bitmapCache.put("bad_box", BitmapFactory.decodeResource(getResources(), R.drawable.bad_box));
         bitmapCache.put("background", BitmapFactory.decodeResource(getResources(), R.drawable.background));
         bitmapCache.put("background2", BitmapFactory.decodeResource(getResources(), R.drawable.background2));
+        bitmapCache.put("first_aid", BitmapFactory.decodeResource(getResources(), R.drawable.first_aid)); // Add this line
         for (int i = 0; i < BlockMoveList.BlockMove.length; i++) {
             for (int[] blockData : BlockMoveList.BlockMove[i]) {
                 int width = blockData[2];
@@ -555,6 +570,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         // Recycle Block bitmaps
         for (Block block : blockList) {
             block.recycle();
+        }
+        // Recycle FirstAid bitmaps
+        for (FirstAid firstAid : firstAidList) {
+            if (firstAid.getBitmap() != null && !firstAid.getBitmap().isRecycled()) {
+                firstAid.getBitmap().recycle();
+            }
         }
         // Existing recycling code
         if (wallImage != null && !wallImage.isRecycled()) {
@@ -700,6 +721,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     badBoxBots.remove(j);
                     break;
                 }
+            }
+
+        }
+        for (FirstAid firstAid : firstAidList) {
+            if (firstAid.isActive() && firstAid.checkCollisionWithPlayer(player)) {
+                Log.i("FirstAid", "FirstAidddddd");
+                firstAidActive(firstAid);
             }
         }
 
@@ -968,6 +996,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         player.update();
     }
 
+    private void firstAidActive(FirstAid firstAid){
+        if((life.currentLives)+30 < 100){
+            life.addedecreaseLife(30);
+            firstAid.collect();
+        }
+
+    }
     private boolean checkCollisionWithWall(WallUpDownScript wall, Player player) {
         return player.getX() + player.getWidth() > wall.getX() &&
                 player.getX() < wall.getX() + wall.getWidth() &&
@@ -1061,7 +1096,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         for (ilusoryblocks illusory : illusoryBlocks) {
             illusory.draw(canvas);
         }
-
+        for (FirstAid firstAid : firstAidList) {
+            firstAid.draw(canvas);
+        }
         for (SmallRunBoom smallBoom : smallRunBooms) {
             smallBoom.draw(canvas);
         }

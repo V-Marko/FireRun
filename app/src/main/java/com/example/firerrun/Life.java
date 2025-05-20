@@ -13,7 +13,7 @@ import android.widget.Button;
 
 public class Life {
     private int maxLives;
-    private int currentLives;
+    public int currentLives;
     private Paint textPaint;
     private Context context;
     private Handler handler;
@@ -123,6 +123,9 @@ public class Life {
 
     public void decreaseLife(int amount) {
         currentLives -= amount;
+    }
+    public void addedecreaseLife(int add) {
+        currentLives += add;
     }
 
     public void resetLife() {

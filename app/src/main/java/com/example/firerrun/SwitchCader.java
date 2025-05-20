@@ -171,5 +171,8 @@ public class SwitchCader {
         for (TurretBullet turretBullet : gameView.turretBullets) {
             turretBullet.x += deltaOffset;
         }
+        for (FirstAid firstAid : gameView.firstAidList) {
+            firstAid.x += deltaOffset;
+        }
     }
 }
