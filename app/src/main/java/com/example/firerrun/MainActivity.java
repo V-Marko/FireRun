@@ -107,7 +107,7 @@ public class MainActivity extends Activity {
         btnShoot.setOnClickListener(v -> playerController.onShootButtonPressed());
 
         btnUse.setOnClickListener(v -> {
-            gameView.activateSwitch(); // Вызываем метод в GameView для активации переключателя
+            gameView.activateSwitch();
         });
     }
 
@@ -141,7 +141,6 @@ public class MainActivity extends Activity {
         if (gameView != null) {
             gameView.pauseGame();
         }
-        // Release MediaPlayer resources
         if (shoot_voice != null) {
             shoot_voice.release();
             shoot_voice = null;

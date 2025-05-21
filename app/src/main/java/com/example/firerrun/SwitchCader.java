@@ -8,6 +8,7 @@ import android.util.Log;
 
 import java.util.List;
 
+
 public class SwitchCader {
     public static boolean isCameraMoving;
     private List<FinishScript> finishScripts;
@@ -76,6 +77,10 @@ public class SwitchCader {
     }
 
     private void animateCaderTransition(float offsetValue, boolean isLeft) {
+        if (isAnimating) {
+            return;
+        }
+
         isAnimating = true;
         isCameraMoving = true;
 
@@ -114,6 +119,7 @@ public class SwitchCader {
 
         animator.start();
     }
+
 
     private void moveGameObjects(float deltaOffset) {
         for (FinishScript finishScript : finishScripts) {

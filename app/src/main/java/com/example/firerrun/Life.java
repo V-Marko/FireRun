@@ -1,7 +1,9 @@
 package com.example.firerrun;
 
+import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -9,7 +11,7 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
-import android.widget.Button;
+import android.view.View;
 
 public class Life {
     private int maxLives;
@@ -26,7 +28,7 @@ public class Life {
 
     private int textX = 360;
 
-    public Life(Context context) {
+    public Life(Context context, GameView gameView) {
         this.context = context;
         this.handler = new Handler(Looper.getMainLooper());
         this.maxLives = 100;
@@ -74,7 +76,6 @@ public class Life {
 
             if (currentLives <= 0) {
                 currentLives = 0;
-                playerLose(canvas);
             }
         } else {
             currentLives = 100;
@@ -102,30 +103,8 @@ public class Life {
             canvas.drawRect(fillRect, healthBarFillPaint);
         }
     }
-
-    public void playerLose(Canvas canvas) {
-        Paint paint = new Paint();
-        paint.setColor(Color.BLACK);
-        paint.setStyle(Paint.Style.FILL);
-        paint.setDither(true);
-
-        canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), paint);
-
-        paint.setColor(Color.WHITE);
-        paint.setTextSize(100);
-        paint.setTextAlign(Paint.Align.CENTER);
-
-        float x = canvas.getWidth() / 2;
-        float y = canvas.getHeight() / 3;
-
-        canvas.drawText("Game Over", x, y, paint);
-    }
-
     public void decreaseLife(int amount) {
         currentLives -= amount;
-    }
-    public void addedecreaseLife(int add) {
-        currentLives += add;
     }
 
     public void resetLife() {

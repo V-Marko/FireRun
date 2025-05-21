@@ -35,6 +35,7 @@ import java.util.Map;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public static int headState = 0;
+    private boolean isGameOver = false;
 
     private Bitmap settingsBulletIcon;
     private Bitmap settingsHead1Icon;
@@ -459,7 +460,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         player.setBlockMoveScripts(blockMoveScripts);
 
         gameThread = new GameThread(getHolder(), this);
-        life = new Life(context);
+        life = new Life(context, this);
         playerImage = BitmapFactory.decodeResource(context.getResources(), R.drawable.stand_1);
         playerImage = Bitmap.createScaledBitmap(playerImage, 100, 100, false);
         animation = new Animation(player);
@@ -615,6 +616,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (isGamePaused) return;
 
         long currentTime = System.currentTimeMillis();
+
+
+        if (life.currentLives <= 0) {
+            isGamePaused = true;
+            isGameOver = true;
+            hideGameButtons();
+            return;
+        }
 
         float originalSpeed = player.speed;
 
@@ -1015,7 +1024,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
-
+        if (isGameOver) {
+            drawGameOverScreen(canvas);
+            return;
+        }
+        
         if (isMenuVisible) {
             hideGameButtons();
             MenuLevelsFunction(canvas);
@@ -1157,6 +1170,83 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    private Rect retryButton;
+
+    private void drawGameOverScreen(Canvas canvas) {
+        hideGameButtons();
+
+        // Load and scale background2
+        Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
+        int screenWidth = getWidth();
+        int screenHeight = getHeight();
+
+        float scale = (float) screenWidth / background.getWidth();
+        int newWidth = Math.round(background.getWidth() * scale);
+        int newHeight = Math.round(background.getHeight() * scale);
+
+        Bitmap scaledBackground = Bitmap.createScaledBitmap(background, newWidth, newHeight, true);
+        scaledBackground = blurBitmap(scaledBackground);
+
+        // Draw the background
+        int offsetX = 0;
+        int offsetY = screenHeight - newHeight;
+        canvas.drawBitmap(scaledBackground, offsetX, offsetY, null);
+
+        // Add a semi-transparent overlay for readability
+        Paint backgroundPaint = new Paint();
+        backgroundPaint.setColor(Color.argb(100, 0, 0, 0));
+        canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
+
+        // Draw game over image
+        Bitmap gameOverImage = BitmapFactory.decodeResource(getResources(), R.drawable.game_over);
+        if (gameOverImage != null) {
+            int originalWidth = 2424;
+            int originalHeight = 616;
+
+            float maxWidth = getWidth() * 0.8f;
+            float scaleFactor = maxWidth / originalWidth;
+            int scaledWidth = (int) (originalWidth * scaleFactor);
+            int scaledHeight = (int) (originalHeight * scaleFactor);
+
+            int imageX = (getWidth() - scaledWidth) / 2;
+            int imageY = (getHeight() / 4) - (scaledHeight / 2);
+
+            canvas.drawBitmap(gameOverImage, null, new Rect(imageX, imageY, imageX + scaledWidth, imageY + scaledHeight), null);
+        }
+
+        // Draw buttons
+        Paint buttonPaint = new Paint();
+        buttonPaint.setColor(Color.DKGRAY);
+
+        Paint buttonTextPaint = new Paint();
+        buttonTextPaint.setColor(Color.WHITE);
+        buttonTextPaint.setTextSize(80);
+        buttonTextPaint.setTextAlign(Paint.Align.CENTER);
+
+        int buttonWidth = getWidth() / 4;
+        int buttonHeight = 150;
+        int centerX = getWidth() / 2;
+
+        int retryButtonY = getHeight() / 2;
+        retryButton = new Rect(
+                centerX - buttonWidth,
+                retryButtonY,
+                centerX + buttonWidth,
+                retryButtonY + buttonHeight
+        );
+        canvas.drawRect(retryButton, buttonPaint);
+        canvas.drawText("Retry", centerX, retryButtonY + buttonHeight / 2 + 25, buttonTextPaint);
+
+        int menuButtonY = retryButtonY + buttonHeight + 20;
+        menuButton = new Rect(
+                centerX - buttonWidth,
+                menuButtonY,
+                centerX + buttonWidth,
+                menuButtonY + buttonHeight
+        );
+        canvas.drawRect(menuButton, buttonPaint);
+        canvas.drawText("Menu", centerX, menuButtonY + buttonHeight / 2 + 25, buttonTextPaint);
+    }
     public Player getPlayer() {
         return player;
     }
@@ -1320,6 +1410,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void MenuLevelsFunction(Canvas canvas) {
+        hideGameButtons();
+
         Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background2);
         int screenWidth = getWidth();
         int screenHeight = getHeight();
@@ -1531,7 +1623,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             // "->"
             canvas.drawText("→", rightButton.centerX(), rightButton.centerY() + 30, arrowPaint);
 
-            String characterName = (headState == 0) ? "SOLDIER" : "NINJA";
+            String characterName = (headState == 0) ? "Dmitri" : (headState == 1) ? "Mark" : "Yana";
             Paint namePaint = new Paint();
             namePaint.setColor(Color.WHITE);
             namePaint.setTextSize(80);
@@ -1777,6 +1869,31 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             lastTouchTime = currentTime;
             isDoubleTapProcessed = false;
 
+
+            if (isGameOver) {
+                if (retryButton != null && retryButton.contains((int) touchX, (int) touchY)) {
+                    isGameOver = false;
+                    isGamePaused = false;
+                    life.resetLife();
+                    player.resetPosition();
+                    loadLevel(level);
+                    player.setBlocks(blockList);
+                    player.setBlockMoveScripts(blockMoveScripts);
+                    player.setSwitches(switches);
+                    resumeGame();
+                    showGameButtons();
+                    invalidate();
+                    return true;
+                }
+
+                if (menuButton != null && menuButton.contains((int) touchX, (int) touchY)) {
+                    isGameOver = false;
+                    goToMenu();
+                    invalidate();
+                    return true;
+                }
+            }
+
             if (isSettingsScreenVisible) {
                 if (backButton != null && backButton.contains((int) touchX, (int) touchY)) {
                     isSettingsScreenVisible = false;
@@ -1992,7 +2109,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
                 return true;
             }
-        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+        }
+        else if (event.getAction() == MotionEvent.ACTION_UP) {
             isDraggingBackgroundMusicSlider = false;
             isDraggingShootSlider = false;
             isDraggingWalkSlider = false;
@@ -2001,7 +2119,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return super.onTouchEvent(event);
     }
 
-    private void hideGameButtons() {
+    public static void hideControllerButtons(Context context) {
+        ((Activity) context).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                MainActivity.btnLeft.setVisibility(View.GONE);
+                MainActivity.btnRight.setVisibility(View.GONE);
+                MainActivity.btnJump.setVisibility(View.GONE);
+                MainActivity.btnShoot.setVisibility(View.GONE);
+                MainActivity.btnUse.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    public void hideGameButtons() {
         ((Activity) getContext()).runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -2016,6 +2147,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private void showGameButtons() {
+
         ((Activity) getContext()).runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -2069,22 +2201,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         isInMenu = true;
         isMenuVisible = true;
         isGamePaused = false;
+        isGameOver = false;
         isLoad = false;
         bullets.clear();
         turretBullets.clear();
         player.resetPosition();
         life.resetLife();
+        hideGameButtons();
         resumeGame();
 
-        ((Activity) getContext()).runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                MainActivity.btnLeft.setVisibility(View.VISIBLE);
-                MainActivity.btnRight.setVisibility(View.VISIBLE);
-                MainActivity.btnJump.setVisibility(View.VISIBLE);
-                MainActivity.btnShoot.setVisibility(View.VISIBLE);
-            }
-        });
+
     }
 
     public List<SpeedGreenScript> getSpeedGreenScripts() {
