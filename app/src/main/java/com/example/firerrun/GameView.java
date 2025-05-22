@@ -1623,7 +1623,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             // "->"
             canvas.drawText("→", rightButton.centerX(), rightButton.centerY() + 30, arrowPaint);
 
-            String characterName = (headState == 0) ? "Dmitri" : (headState == 1) ? "Mark" : "Yana";
+            String characterName = (headState == 0) ? "Dima" : (headState == 1) ? "Mark" : "Yana";
             Paint namePaint = new Paint();
             namePaint.setColor(Color.WHITE);
             namePaint.setTextSize(80);
