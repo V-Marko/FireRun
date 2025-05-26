@@ -12,9 +12,7 @@ public class ilusoryblocksList {
             {},//level 8
             {//level 9
                 //    x   y    w    h   id
-                {1000, 700, 100, 100, 0},
-                {1100, 700, 100, 100, 0},
-                {1200, 700, 100, 100, 0},
+
             },
     };
 }
