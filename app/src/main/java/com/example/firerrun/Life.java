@@ -104,7 +104,11 @@ public class Life {
         }
     }
     public void decreaseLife(int amount) {
-        currentLives -= amount;
+        currentLives = Math.max(0, currentLives - amount);
+        if (currentLives <= 0) {
+            ((GameView) ((Activity) context).findViewById(R.id.gameView)).pauseGame();
+            ((GameView) ((Activity) context).findViewById(R.id.gameView)).isGameOver = true;
+        }
     }
 
     public void resetLife() {

@@ -35,7 +35,7 @@ import java.util.Map;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public static int headState = 0;
-    private boolean isGameOver = false;
+    boolean isGameOver = false;
 
     private Bitmap settingsBulletIcon;
     private Bitmap settingsHead1Icon;
@@ -221,6 +221,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         turretBullets.clear();
         switches.clear();
         firstAidList.clear();
+        life.resetLife();
         if (level - 1 >= 0 && level - 1 < BlockMoveList.BlockMove.length) {
             for (int[] blockData : BlockMoveList.BlockMove[level - 1]) {
                 if (blockData.length < 13) {
@@ -452,15 +453,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         isInMenu = true;
 
         player = new Player(context, this);
+        life = new Life(context, this); // Move Life initialization here, before loadLevel
         player.setSwitches(switches);
 
-        loadLevel(level);
+        loadLevel(level); // Now safe to call loadLevel
 
         player.setBlocks(blockList);
         player.setBlockMoveScripts(blockMoveScripts);
 
         gameThread = new GameThread(getHolder(), this);
-        life = new Life(context, this);
         playerImage = BitmapFactory.decodeResource(context.getResources(), R.drawable.stand_1);
         playerImage = Bitmap.createScaledBitmap(playerImage, 100, 100, false);
         animation = new Animation(player);
@@ -481,7 +482,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         int sliderImageWidth = 100;
         int sliderImageHeight = 100;
-
 
         settingsBulletIcon = BitmapFactory.decodeResource(getResources(), R.drawable.settings_bullet_icon);
         settingsBulletIcon = Bitmap.createScaledBitmap(settingsBulletIcon, sliderImageWidth, sliderImageHeight, false);
@@ -505,7 +505,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             gunBitmap = Bitmap.createScaledBitmap(gunBitmap, (int) (523 * scaleFactor), (int) (191 * scaleFactor), true);
         }
     }
-
     public static int getScreenWidth(Context context) {
         WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -975,9 +974,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
 
         if (player.getY() >= 1000) {
-            life.decreaseLife(999_999_999);
+            isGameOver = true;
+            isGamePaused = true;
+            life.setCurrentLives(0);
+            hideGameButtons();
         }
-
         if (!isOnBlock) {
             player.LandRestriction = 500;
         }
